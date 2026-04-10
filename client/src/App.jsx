@@ -1,47 +1,43 @@
 import { Routes, Route } from 'react-router-dom';
+import { ToastProvider } from './components/ui/Toast.jsx';
+import Landing from './pages/Landing.jsx';
+import Login from './pages/auth/Login.jsx';
+import Register from './pages/auth/Register.jsx';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-}
+    <ToastProvider>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-// ── Temporary placeholder pages (replaced in Stage 1) ─────────────────────
+        {/* Dashboard routes — wired in Stage 2 with auth guard */}
+        {/* <Route element={<DashboardLayout user={user} onLogout={logout} />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/browse" element={<Browse />} />
+          <Route path="/bookings" element={<Bookings />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route> */}
 
-function Home() {
-  return (
-    <div className="container" style={{ paddingTop: 'var(--space-16)', textAlign: 'center' }}>
-      <h1 style={{ marginBottom: 'var(--space-4)' }}>CampusConnect</h1>
-      <p style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-secondary)' }}>
-        Your campus. Your crew.
-      </p>
-      <p style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-muted)' }}>
-        Trusted services, right where you are.
-      </p>
-      <div style={{
-        marginTop: 'var(--space-8)',
-        padding: 'var(--space-4)',
-        background: 'var(--color-primary-50)',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--color-primary-100)',
-        display: 'inline-block',
-      }}>
-        <p style={{ color: 'var(--color-primary-600)', fontWeight: 'var(--font-medium)' }}>
-          Stage 0 complete — project scaffolded successfully
-        </p>
-      </div>
-    </div>
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ToastProvider>
   );
 }
 
 function NotFound() {
   return (
     <div className="container" style={{ paddingTop: 'var(--space-16)', textAlign: 'center' }}>
-      <h1>404</h1>
-      <p>Page not found</p>
+      <h1 style={{ fontSize: 'var(--text-5xl)', fontWeight: 'var(--font-extrabold)', color: 'var(--color-neutral-300)' }}>
+        404
+      </h1>
+      <p style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)' }}>
+        Page not found
+      </p>
     </div>
   );
 }

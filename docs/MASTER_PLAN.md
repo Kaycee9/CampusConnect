@@ -867,15 +867,15 @@ Landing -> Multi-step Register -> Dashboard
 - [ ] Set up ESLint, Prettier, Husky pre-commit hooks *(deferred — not blocking)*
 - [ ] Initialize develop branch *(team to do on first PR)*
 
-### Stage 1: Design System & UI Foundations (Est. 2–3 days) — UP NEXT
+### Stage 1: Design System & UI Foundations — COMPLETED
 - [x] Implement CSS design tokens (colors, typography, spacing) *(completed in Stage 0)*
-- [ ] Build base UI component library (Button, Input, Badge, Card, Modal, Avatar, Toast, Spinner, StarRating)
-- [ ] Design and implement Navbar + Sidebar + BottomNav
-- [ ] Build Landing page
-- [ ] Implement Auth pages (Login, Register multi-step for both roles)
-- [ ] Create responsive dashboard layout
+- [x] Build base UI component library (Button, Input, Badge, Card, Modal, Avatar, Toast, Spinner, StarRating)
+- [x] Design and implement Navbar + Sidebar + BottomNav
+- [x] Build Landing page
+- [x] Implement Auth pages (Login, Register multi-step for both roles)
+- [x] Create responsive dashboard layout
 
-### Stage 2: Authentication & User Management (Est. 2–3 days)
+### Stage 2: Authentication & User Management (Est. 2–3 days) — UP NEXT
 - [ ] Backend: Auth routes (register, login, refresh, verify, reset)
 - [ ] Backend: Student & Artisan profile creation on registration
 - [ ] Frontend: Register flow (student & artisan onboarding)
