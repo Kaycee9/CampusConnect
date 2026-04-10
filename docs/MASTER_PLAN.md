@@ -830,22 +830,50 @@ Landing -> Multi-step Register -> Dashboard
 
 ## 9. Staged Implementation Roadmap
 
-### Stage 0: Project Setup (Est. 1–2 days)
-- [ ] Initialize monorepo structure (client/ + server/)
-- [ ] Set up React + Vite client with CSS design system
-- [ ] Set up Express server with Prisma + PostgreSQL
-- [ ] Configure .env files and environment variables
-- [ ] Set up ESLint, Prettier, Husky pre-commit hooks
-- [ ] Initialize Git branching strategy (main, develop, feature/*)
-- [ ] Create base README and docs/ structure
+### Stage 0: Project Setup — COMPLETED (April 10, 2026)
+- [x] Initialize monorepo structure (`client/` + `server/`)
+- [x] Set up React 18 + Vite client
+  - Installed: react-router-dom, @tanstack/react-query, axios, socket.io-client, lucide-react, zod
+  - Configured `main.jsx` with BrowserRouter + QueryClientProvider
+  - Created `App.jsx` with React Router skeleton
+  - SEO-optimized `index.html` (meta description, theme color)
+  - Build verified: `vite build` passes clean
+- [x] Implement CSS design system (`styles/tokens.css` + `styles/global.css`)
+  - Full color palette (primary, accent, success, error, warning, neutrals)
+  - Typography scale (Plus Jakarta Sans + Inter)
+  - Spacing, radius, shadow, z-index, transition tokens
+  - Global reset, utilities, responsive container, animations
+- [x] Set up Express server with Prisma
+  - 15 dependencies installed (express, cors, helmet, cookie-parser, prisma, socket.io, bcryptjs, jsonwebtoken, etc.)
+  - `server.js` — HTTP server + Socket.io wiring
+  - `src/app.js` — Express factory with CORS credentials, cookie-parser, rate limiter, all routes mounted
+  - `src/config/env.js` — Centralized env config
+  - `src/config/database.js` — Prisma client singleton
+- [x] Create full Prisma schema (`server/prisma/schema.prisma`)
+  - Models: User, StudentProfile, ArtisanProfile, Booking, Payment, Review, Conversation, Message, Notification, RefreshToken
+  - Enums: Role, ServiceCategory, BookingStatus, PaymentStatus
+- [x] Create dual-mode auth middleware (`src/middleware/auth.js`)
+  - Bearer header (Priority 1) + HttpOnly cookie fallback (Priority 2)
+  - Role-based `authorize()` helper
+- [x] Create Zod validation middleware (`src/middleware/validate.js`)
+- [x] Create all 7 route stubs (auth, users, artisans, bookings, messages, payments, reviews)
+- [x] Set up Axios API client (`client/src/lib/api.js`)
+  - `withCredentials: true` for cookie transport
+  - Bearer token from localStorage
+  - Silent refresh interceptor on 401 TOKEN_EXPIRED
+- [x] Configure `.env.example` files (root, server, client)
+- [x] Set up `.gitignore`
+- [x] Create docs structure (MASTER_PLAN.md, DESIGN_SYSTEM.md, CONTRIBUTING.md, README.md)
+- [ ] Set up ESLint, Prettier, Husky pre-commit hooks *(deferred — not blocking)*
+- [ ] Initialize develop branch *(team to do on first PR)*
 
-### Stage 1: Design System & UI Foundations (Est. 2–3 days)
-- [ ] Implement CSS design tokens (colors, typography, spacing)
-- [ ] Build base UI component library (Button, Input, Badge, Card, Modal, etc.)
+### Stage 1: Design System & UI Foundations (Est. 2–3 days) — UP NEXT
+- [x] Implement CSS design tokens (colors, typography, spacing) *(completed in Stage 0)*
+- [ ] Build base UI component library (Button, Input, Badge, Card, Modal, Avatar, Toast, Spinner, StarRating)
 - [ ] Design and implement Navbar + Sidebar + BottomNav
-- [ ] Design all key page layouts
-- [ ] Implement Auth pages (Login, Register multi-step)
-- [ ] Implement responsive grid system
+- [ ] Build Landing page
+- [ ] Implement Auth pages (Login, Register multi-step for both roles)
+- [ ] Create responsive dashboard layout
 
 ### Stage 2: Authentication & User Management (Est. 2–3 days)
 - [ ] Backend: Auth routes (register, login, refresh, verify, reset)
