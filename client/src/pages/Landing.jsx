@@ -32,7 +32,6 @@ export default function Landing() {
       <section className="hero">
         <div className="hero__inner container">
           <div className="hero__content">
-            <span className="hero__badge">Trusted by campus communities</span>
             <h1 className="hero__title">
               Your campus.<br />
               <span className="hero__title-accent">Your crew.</span>
@@ -52,18 +51,18 @@ export default function Landing() {
             </div>
             <div className="hero__stats">
               <div className="hero__stat">
-                <span className="hero__stat-number">500+</span>
-                <span className="hero__stat-label">Artisans</span>
+                <span className="hero__stat-number">10+</span>
+                <span className="hero__stat-label">Service Categories</span>
               </div>
               <div className="hero__stat-divider" />
               <div className="hero__stat">
-                <span className="hero__stat-number">2k+</span>
-                <span className="hero__stat-label">Students</span>
+                <span className="hero__stat-number">Free</span>
+                <span className="hero__stat-label">For Students</span>
               </div>
               <div className="hero__stat-divider" />
               <div className="hero__stat">
-                <span className="hero__stat-number">4.8</span>
-                <span className="hero__stat-label">Avg Rating</span>
+                <span className="hero__stat-number">Secure</span>
+                <span className="hero__stat-label">In-App Payments</span>
               </div>
             </div>
           </div>
