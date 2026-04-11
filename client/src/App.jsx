@@ -5,6 +5,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/auth/Login.jsx';
 import Register from './pages/auth/Register.jsx';
+import Profile from './pages/dashboard/Profile.jsx';
 
 function App() {
   return (
@@ -22,7 +23,7 @@ function App() {
             <Route path="/browse" element={<Placeholder title="Browse Artisans" />} />
             <Route path="/bookings" element={<Placeholder title="My Bookings" />} />
             <Route path="/messages" element={<Placeholder title="Messages" />} />
-            <Route path="/profile" element={<Placeholder title="My Profile" />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/earnings" element={<Placeholder title="Earnings" />} />
             <Route path="/settings" element={<Placeholder title="Settings" />} />
             <Route path="/reviews" element={<Placeholder title="My Reviews" />} />
