@@ -7,6 +7,14 @@ import * as userController from '../controllers/user.controller.js';
 
 const router = Router();
 
+const parseNumber = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  const num = Number(value);
+  return Number.isFinite(num) ? num : value;
+};
+
 /* ── Validation Schemas ─────────────────────────────────────────────────── */
 
 const updateProfileSchema = z.object({
@@ -14,7 +22,9 @@ const updateProfileSchema = z.object({
   lastName: z.string().min(1, 'Last name is required').optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
-  
+  lat: z.preprocess(parseNumber, z.number().min(-90).max(90).optional()),
+  lng: z.preprocess(parseNumber, z.number().min(-180).max(180).optional()),
+
   // Artisan specific
   bio: z.string().optional(),
   category: z.enum(['PLUMBING', 'ELECTRICAL', 'PAINTING', 'CARPENTRY', 'CLEANING', 'TAILORING', 'BARBING', 'WELDING', 'MECHANICS', 'TECH_REPAIR', 'OTHER']).optional(),

@@ -5,7 +5,7 @@ import { useToast } from '../../components/ui/Toast.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Avatar from '../../components/ui/Avatar.jsx';
-import { Camera, User as UserIcon, MapPin, Phone, Briefcase, FileText, DollarSign } from 'lucide-react';
+import { Camera, User as UserIcon, MapPin, Navigation, Phone, Briefcase, FileText, DollarSign } from 'lucide-react';
 import './Profile.css';
 
 const CATEGORIES = [
@@ -25,6 +25,8 @@ export default function Profile() {
     lastName: profileData?.lastName || '',
     phone: profileData?.phone || '',
     address: profileData?.address || '',
+    lat: profileData?.lat ?? '',
+    lng: profileData?.lng ?? '',
     bio: profileData?.bio || '',
     category: profileData?.category || '',
     startingPrice: profileData?.startingPrice || '',
@@ -34,6 +36,7 @@ export default function Profile() {
   const [avatarPreview, setAvatarPreview] = useState(profileData?.avatarUrl || null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -51,6 +54,30 @@ export default function Profile() {
     }
   };
 
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported on this browser');
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm((prev) => ({
+          ...prev,
+          lat: Number(position.coords.latitude.toFixed(6)),
+          lng: Number(position.coords.longitude.toFixed(6)),
+        }));
+        setLocationLoading(false);
+        toast.success('GPS coordinates updated');
+      },
+      () => {
+        setLocationLoading(false);
+        toast.error('Could not access your location');
+      }
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -58,7 +85,10 @@ export default function Profile() {
     try {
       const formData = new FormData();
       Object.keys(form).forEach(key => {
-        if (form[key]) formData.append(key, form[key]);
+        const value = form[key];
+        if (value !== '' && value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
       });
       if (selectedFile) {
         formData.append('avatar', selectedFile);
@@ -156,6 +186,18 @@ export default function Profile() {
               onChange={handleChange}
               placeholder="e.g. Hall of Residence"
             />
+          </div>
+
+          <div className="profile-location-row">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleUseCurrentLocation}
+              loading={locationLoading}
+              icon={Navigation}
+            >
+              Update GPS from current location
+            </Button>
           </div>
 
           {/* Artisan Specific Details */}

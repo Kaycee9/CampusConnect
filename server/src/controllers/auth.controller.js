@@ -1,11 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import db from '../config/database.js';
 import { generateTokenPair, setTokenCookies, clearTokenCookies } from '../lib/jwt.js';
+import env from '../config/env.js';
+import { sendEmail } from '../utils/email.js';
 
 export const register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role, category, bio, startingPrice, address } = req.body;
+    const { email, password, firstName, lastName, role, category, bio, startingPrice, address, lat, lng } = req.body;
 
     // Check if user exists
     const existing = await db.user.findUnique({ where: { email } });
@@ -28,6 +31,9 @@ export const register = async (req, res) => {
             userId: newUser.id,
             firstName,
             lastName,
+            address: address || null,
+            lat: typeof lat === 'number' ? lat : null,
+            lng: typeof lng === 'number' ? lng : null,
           },
         });
       } else if (role === 'ARTISAN') {
@@ -39,6 +45,8 @@ export const register = async (req, res) => {
             category,
             bio: bio || null,
             address: address || null,
+            lat: typeof lat === 'number' ? lat : null,
+            lng: typeof lng === 'number' ? lng : null,
             startingPrice: startingPrice ? Number(startingPrice) : null,
           },
         });
@@ -116,7 +124,7 @@ export const login = async (req, res) => {
 export const refresh = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
-    
+
     if (!refreshToken) {
       return res.status(401).json({ error: 'No refresh token provided' });
     }
@@ -168,7 +176,7 @@ export const refresh = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
-    
+
     // Server-side invalidation
     if (refreshToken) {
       await db.refreshToken.deleteMany({
@@ -203,5 +211,95 @@ export const getMe = async (req, res) => {
   } catch (error) {
     console.error('GetMe error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await db.user.findUnique({
+      where: { email },
+      select: { id: true, email: true },
+    });
+
+    // Always return a generic response to avoid account enumeration.
+    if (!user) {
+      return res.json({ message: 'If an account exists for this email, a reset link has been sent.' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken,
+        resetTokenExpiry: expiresAt,
+      },
+    });
+
+    const resetLink = `${env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Reset your CampusConnect password',
+        html: `
+          <p>Hello,</p>
+          <p>We received a request to reset your password.</p>
+          <p>Use this link to reset it (valid for 1 hour):</p>
+          <p><a href="${resetLink}">${resetLink}</a></p>
+          <p>If you did not request this, you can ignore this email.</p>
+        `,
+      });
+    } catch (mailError) {
+      console.error('Forgot password email send failed:', mailError);
+    }
+
+    return res.json({ message: 'If an account exists for this email, a reset link has been sent.' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const token = req.validatedParams?.token || req.params.token;
+    const password = req.body.password;
+
+    const user = await db.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: {
+          gt: new Date(),
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await db.$transaction([
+      db.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          resetToken: null,
+          resetTokenExpiry: null,
+        },
+      }),
+      db.refreshToken.deleteMany({ where: { userId: user.id } }),
+    ]);
+
+    return res.json({ message: 'Password reset successful. Please log in again.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, MapPin, ArrowRight, ArrowLeft, Wrench, FileText, DollarSign } from 'lucide-react';
+import { Mail, Lock, User, MapPin, Navigation, ArrowRight, ArrowLeft, Wrench, FileText, DollarSign } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -21,11 +21,12 @@ export default function Register() {
   const [role, setRole] = useState(initialRole);
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
-    // Artisan-specific
     category: '', bio: '', startingPrice: '', address: '',
+    lat: null, lng: null,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -36,9 +37,10 @@ export default function Register() {
 
   const validateStep = () => {
     const newErrors = {};
-    if (step === 1) {
-      if (!role) newErrors.role = 'Please select a role';
+    if (step === 1 && !role) {
+      newErrors.role = 'Please select a role';
     }
+
     if (step === 2) {
       if (!form.firstName.trim()) newErrors.firstName = 'First name is required';
       if (!form.lastName.trim()) newErrors.lastName = 'Last name is required';
@@ -46,29 +48,74 @@ export default function Register() {
       if (!form.password) newErrors.password = 'Password is required';
       else if (form.password.length < 8) newErrors.password = 'Must be at least 8 characters';
       if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+      if (form.lat == null || form.lng == null) newErrors.address = 'Please capture your current GPS location';
     }
-    if (step === 3 && role === 'ARTISAN') {
-      if (!form.category) newErrors.category = 'Select a service category';
+
+    if (step === 3 && role === 'ARTISAN' && !form.category) {
+      newErrors.category = 'Select a service category';
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const nextStep = () => {
-    if (validateStep()) setStep(step + 1);
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setErrors((prev) => ({ ...prev, address: 'Geolocation is not supported on this browser' }));
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm((prev) => ({
+          ...prev,
+          lat: Number(position.coords.latitude.toFixed(6)),
+          lng: Number(position.coords.longitude.toFixed(6)),
+        }));
+        setLocationLoading(false);
+      },
+      () => {
+        setLocationLoading(false);
+        setErrors((prev) => ({ ...prev, address: 'Could not access your current location' }));
+      }
+    );
   };
 
-  const prevStep = () => setStep(step - 1);
+  const nextStep = () => {
+    if (validateStep()) setStep((s) => s + 1);
+  };
+
+  const prevStep = () => setStep((s) => s - 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep()) return;
     setLoading(true);
-    
-    const { confirmPassword, ...payload } = form;
-    const { success } = await register({ role, ...payload });
+
+    const payload = {
+      role,
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      email: form.email.trim(),
+      password: form.password,
+    };
+
+    if (form.address.trim()) payload.address = form.address.trim();
+    if (form.lat != null && form.lng != null) {
+      payload.lat = form.lat;
+      payload.lng = form.lng;
+    }
+
+    if (role === 'ARTISAN') {
+      payload.category = form.category;
+      if (form.bio.trim()) payload.bio = form.bio.trim();
+      if (form.startingPrice !== '') payload.startingPrice = form.startingPrice;
+    }
+
+    const { success } = await register(payload);
     setLoading(false);
-    
+
     if (success) {
       navigate('/dashboard', { replace: true });
     }
@@ -100,7 +147,6 @@ export default function Register() {
             </p>
           </div>
 
-          {/* Progress bar */}
           <div className="auth-form__progress">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div
@@ -111,7 +157,6 @@ export default function Register() {
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
-            {/* Step 1: Role Selection */}
             {step === 1 && (
               <div className="auth-form__step animate-fade-in">
                 <p className="auth-form__step-label">I am a...</p>
@@ -136,20 +181,12 @@ export default function Register() {
                   </button>
                 </div>
                 {errors.role && <span className="input-group__error">{errors.role}</span>}
-                <Button
-                  type="button"
-                  fullWidth
-                  size="lg"
-                  disabled={!role}
-                  onClick={nextStep}
-                  iconRight={ArrowRight}
-                >
+                <Button type="button" fullWidth size="lg" disabled={!role} onClick={nextStep} iconRight={ArrowRight}>
                   Continue
                 </Button>
               </div>
             )}
 
-            {/* Step 2: Account Details */}
             {step === 2 && (
               <div className="auth-form__step animate-fade-in">
                 <div className="auth-form__row">
@@ -211,6 +248,33 @@ export default function Register() {
                   required
                 />
 
+                <Input
+                  label="Address (optional)"
+                  name="address"
+                  icon={MapPin}
+                  placeholder="e.g. Hall of Residence"
+                  value={form.address}
+                  onChange={handleChange}
+                  error={errors.address}
+                />
+
+                <div className="auth-form__step-actions" style={{ marginTop: 0 }}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={handleUseCurrentLocation}
+                    loading={locationLoading}
+                    icon={Navigation}
+                  >
+                    Use current GPS
+                  </Button>
+                  {form.lat != null && form.lng != null && (
+                    <span className="text-secondary" style={{ fontSize: 'var(--text-sm)' }}>
+                      GPS captured: {form.lat}, {form.lng}
+                    </span>
+                  )}
+                </div>
+
                 <div className="auth-form__step-actions">
                   <Button type="button" variant="ghost" onClick={prevStep} icon={ArrowLeft}>
                     Back
@@ -228,7 +292,6 @@ export default function Register() {
               </div>
             )}
 
-            {/* Step 3: Artisan Profile Details */}
             {step === 3 && role === 'ARTISAN' && (
               <div className="auth-form__step animate-fade-in">
                 <div className="input-group">
@@ -263,7 +326,7 @@ export default function Register() {
                 />
 
                 <Input
-                  label="Starting price (₦)"
+                  label="Starting price (NGN)"
                   name="startingPrice"
                   type="number"
                   icon={DollarSign}
@@ -271,16 +334,6 @@ export default function Register() {
                   value={form.startingPrice}
                   onChange={handleChange}
                   hint="Your minimum service charge"
-                />
-
-                <Input
-                  label="Location / Address"
-                  name="address"
-                  icon={MapPin}
-                  placeholder="e.g. University of Lagos, Akoka"
-                  value={form.address}
-                  onChange={handleChange}
-                  hint="GPS will be captured automatically when you enable location"
                 />
 
                 <div className="auth-form__step-actions">

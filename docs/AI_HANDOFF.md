@@ -33,15 +33,16 @@
 
 ### Stage 2: Authentication & User Management ✅
 - **Backend:** `auth.controller.js` — register, login, refresh (token rotation), logout, getMe
+- **Backend:** forgot-password and reset-password flows
 - **Backend:** `jwt.js` — dual-token generation (15m access / 7d refresh), HttpOnly cookie management
 - **Backend:** `auth.routes.js` — Zod validation schemas for register/login
 - **Backend:** Prisma transactions for atomic User + Profile creation
-- **Backend:** `user.controller.js` — profile update with Cloudinary avatar streaming
+- **Backend:** `user.controller.js` — profile update with Cloudinary avatar streaming and GPS persistence
 - **Backend:** `user.routes.js` — PUT /profile with multer + Zod validation
 - **Frontend:** `AuthContext.jsx` — global user state, login/register/logout methods
 - **Frontend:** `ProtectedRoute.jsx` — route guard with role-based access
 - **Frontend:** Login/Register forms wired to real API endpoints
-- **Frontend:** Profile page (`/profile`) — edit personal info, upload avatar (students + artisans)
+- **Frontend:** Profile page (`/profile`) — edit personal info, upload avatar, update GPS (students + artisans)
 
 ### Code Audit ✅ (8 bugs fixed)
 - Prisma schema field names aligned with controller code (`passwordHash`, not `password`)
@@ -50,6 +51,8 @@
 - User controller correctly updates Profile models (not User model) for name fields
 - Navbar avatar reads from correct profile sub-object path
 - Stale props and debug comments cleaned up
+- Logout now clears auth cookies explicitly and invalidates refresh tokens server-side
+- Student browse access is enforced at the route layer; artisans are redirected away from `/browse`
 
 ---
 
@@ -60,7 +63,10 @@
 | Landing page | ✅ Working | `http://localhost:5173/` |
 | Registration (Student + Artisan) | ✅ Working | `http://localhost:5173/register` |
 | Login | ✅ Working | `http://localhost:5173/login` |
+| Forgot password | ✅ Working | `http://localhost:5173/forgot-password` |
 | Dashboard (placeholder) | ✅ Working | `http://localhost:5173/dashboard` |
+| Browse artisans | ✅ Working | `http://localhost:5173/browse` |
+| Artisan public profile | ✅ Working | `http://localhost:5173/artisan/:id` |
 | Profile edit + avatar upload | ✅ Working | `http://localhost:5173/profile` |
 | API health check | ✅ Working | `http://localhost:5000/api/v1/health` |
 
@@ -80,13 +86,13 @@ npm run dev
 
 ---
 
-## 4. What Comes Next — Stage 3: Discovery & Artisan Listings
+## 4. Stage 3: Discovery & Artisan Listings
 
-This is the **core value proposition** of the product. Students need to find and browse artisans.
+This stage is complete and now serves as a foundation for Stage 4 booking flows.
 
-### 4.1 Backend Tasks
+### 4.1 Completed Backend Work
 
-#### Create `server/src/controllers/artisan.controller.js`
+#### `server/src/controllers/artisan.controller.js`
 - **`listArtisans`** — Paginated query of `ArtisanProfile` with filters:
   - `category` (enum filter)
   - `minRating` (WHERE averageRating >= value)
@@ -98,29 +104,35 @@ This is the **core value proposition** of the product. Students need to find and
 - **`getArtisan`** — Single artisan by ID, including reviews with student names
 - Include computed fields: `averageRating`, `totalReviews`, `totalJobs`
 
-#### Replace `server/src/routes/artisan.routes.js`
+#### `server/src/routes/artisan.routes.js`
 - `GET /api/v1/artisans` — public, calls `listArtisans`
 - `GET /api/v1/artisans/:id` — public, calls `getArtisan`
 - Add Zod validation for query parameters
 
-### 4.2 Frontend Tasks
+### 4.2 Completed Frontend Work
 
-#### Create `client/src/pages/dashboard/Browse.jsx`
+#### `client/src/pages/dashboard/Browse.jsx`
 - Grid layout displaying `ArtisanCard` components
 - Filter controls: category pills/dropdown, price range, rating minimum
 - Search input with debounced querying
 - Pagination or infinite scroll
 - Empty state when no artisans match
-- Wire to the `/browse` route in `App.jsx` (currently a Placeholder)
+- Wired to the `/browse` route in `App.jsx`
+- Student-only access enforced at the route level; artisans are redirected away
 
-#### Create `client/src/components/artisan/ArtisanCard.jsx`
+#### `client/src/components/artisan/ArtisanCard.jsx`
 - Display: avatar, name, category badge, rating stars, starting price, availability dot
 - Click navigates to `/artisan/:id`
 
-#### Create `client/src/pages/artisan/ArtisanPublicProfile.jsx`
+#### `client/src/pages/artisan/ArtisanPublicProfile.jsx`
 - Full read-only view of an artisan
 - Sections: Header with avatar + stats, Bio, Services, Reviews list, "Book Now" CTA button
-- Add route: `/artisan/:id` (public, no auth required)
+- Added route: `/artisan/:id` (public, no auth required)
+
+#### Additional Stage 3 behavior now shipped
+- GPS capture on signup and profile update
+- Distance sorting uses browser geolocation plus artisan profile coordinates
+- No map view is implemented, by explicit scope decision
 
 ### 4.3 Stage 3 Design Guidelines
 - Use the existing design tokens from `tokens.css`
@@ -170,7 +182,13 @@ Register/Login → Backend creates User + Profile (transaction)
 - **ProtectedRoute** wraps all `/dashboard/*` routes; redirects to `/login` if unauthenticated
 - **Navbar**, **Sidebar**, **BottomNav** all consume `useAuth()` directly (no props drilling)
 
-### 5.5 File Upload Pipeline
+### 5.5 Route & Access Notes
+- `/browse` is student-only and redirects artisans away from the page
+- `/artisan/:id` is publicly readable, but the signed-in shell is preserved for authenticated users
+- Logout clears both auth cookies and invalidates the refresh token server-side
+- GPS coordinates are stored on both student and artisan profile records
+
+### 5.6 File Upload Pipeline
 ```
 Frontend (FormData) → multer (memory buffer, 2MB limit, JPEG/PNG/WebP only)
                     → Cloudinary upload_stream (server/src/controllers/user.controller.js)
@@ -202,10 +220,13 @@ CampusConnect/
 │   │       ├── auth/
 │   │       │   ├── Login.jsx                # Login form (wired to AuthContext)
 │   │       │   ├── Register.jsx             # Multi-step register (wired to AuthContext)
+│   │       │   ├── ForgotPassword.jsx      # Password reset request screen
 │   │       │   └── Auth.css                 # Shared auth page styles
+│   │       ├── artisan/
+│   │       │   └── ArtisanPublicProfile.jsx # Public artisan detail page
 │   │       └── dashboard/
 │   │           ├── Profile.jsx + Profile.css # Profile edit page (both roles)
-│   │           └── (Browse.jsx — TO BUILD)
+│   │           └── Browse.jsx + Browse.css   # Student-only browse page
 │   └── package.json
 │
 ├── server/
@@ -228,7 +249,7 @@ CampusConnect/
 │   │   └── routes/
 │   │       ├── auth.routes.js               # POST register/login/refresh/logout, GET /me
 │   │       ├── user.routes.js               # PUT /profile (auth + multer + zod)
-│   │       ├── artisan.routes.js            # STUB — to implement in Stage 3
+│   │       ├── artisan.routes.js            # GET list/profile (Stage 3 complete)
 │   │       ├── booking.routes.js            # STUB — Stage 4
 │   │       ├── message.routes.js            # STUB — Stage 5
 │   │       ├── payment.routes.js            # STUB — Stage 6
@@ -249,7 +270,7 @@ CampusConnect/
 
 | Stage | Name | Key Deliverables | Est. |
 |-------|------|-----------------|------|
-| **3** | **Discovery & Artisan Listings** | Artisan API, Browse grid, Search/Filter, Public profile | 2–3 days |
+| **3** | **Discovery & Artisan Listings** | Artisan API, Browse grid, Search/Filter, Public profile | Completed |
 | 4 | Booking System | Booking CRUD, state machine, student/artisan dashboards | 3–4 days |
 | 5 | Real-Time Messaging | Socket.io chat, conversation list, unread badges | 2–3 days |
 | 6 | Payments | Paystack integration, webhook, earnings dashboard | 2–3 days |

@@ -1,0 +1,189 @@
+.artisan-profile-page {
+  padding-bottom: var(--space-10);
+  display: grid;
+  gap: var(--space-5);
+  position: relative;
+  isolation: isolate;
+}
+
+.artisan-profile-page::before {
+  content: '';
+  position: absolute;
+  inset: -24px;
+  z-index: -1;
+  background:
+    radial-gradient(circle at top left, rgba(124, 58, 237, 0.12), transparent 36%),
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 28%);
+  pointer-events: none;
+}
+
+.artisan-profile-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.artisan-profile-toolbar__crumb {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.artisan-profile-page .card {
+  border: 1px solid rgba(124, 58, 237, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.artisan-profile-hero {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: linear-gradient(160deg, #09090b 0%, #4c1d95 72%, #7c3aed 140%);
+  color: var(--color-text-inverse);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
+}
+
+.artisan-profile-hero h1,
+.artisan-profile-hero p,
+.artisan-profile-hero span,
+.artisan-profile-hero small {
+  color: var(--color-text-inverse);
+}
+
+.artisan-profile-hero h1 {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.artisan-profile-hero p,
+.artisan-profile-hero span,
+.artisan-profile-hero small {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.artisan-profile-hero__top {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.artisan-profile-hero__badges {
+  margin-top: var(--space-3);
+  display: inline-flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.artisan-profile-hero__badges span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.artisan-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.artisan-profile-stats div {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.artisan-profile-stats h3,
+.artisan-profile-stats p {
+  color: var(--color-text-inverse);
+}
+
+.artisan-profile-stats h3 {
+  font-size: var(--text-2xl);
+}
+
+.artisan-profile-cta {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.artisan-profile-section {
+  padding: var(--space-5);
+}
+
+.artisan-profile-price {
+  margin-top: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.artisan-profile-reviews {
+  margin-top: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.artisan-review {
+  padding: var(--space-4);
+}
+
+.artisan-review__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.artisan-review__author {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.artisan-review__author p {
+  color: var(--color-text-primary);
+  font-weight: var(--font-semibold);
+}
+
+.artisan-review__author small {
+  color: var(--color-text-muted);
+}
+
+.artisan-profile-loading {
+  min-height: 80vh;
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 768px) {
+  .artisan-profile-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .artisan-profile-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .artisan-profile-hero__top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .artisan-profile-cta {
+    justify-content: stretch;
+  }
+
+  .artisan-profile-cta button {
+    width: 100%;
+  }
+}

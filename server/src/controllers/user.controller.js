@@ -18,10 +18,10 @@ export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
     const role = req.user.role;
-    
+
     const {
-      firstName, lastName, phone, address, 
-      bio, category, startingPrice, yearsExp
+      firstName, lastName, phone, address,
+      lat, lng, bio, category, startingPrice, yearsExp
     } = req.body;
 
     let avatarUrl = undefined;
@@ -51,6 +51,8 @@ export const updateProfile = async (req, res) => {
           ...(lastName && { lastName }),
           ...(phone && { phone }),
           ...(address && { address }),
+          ...(typeof lat === 'number' && { lat }),
+          ...(typeof lng === 'number' && { lng }),
           ...(avatarUrl && { avatarUrl }),
         },
       });
@@ -62,6 +64,8 @@ export const updateProfile = async (req, res) => {
           ...(lastName && { lastName }),
           ...(phone && { phone }),
           ...(address && { address }),
+          ...(typeof lat === 'number' && { lat }),
+          ...(typeof lng === 'number' && { lng }),
           ...(bio && { bio }),
           ...(category && { category }),
           ...(startingPrice && { startingPrice: Number(startingPrice) }),

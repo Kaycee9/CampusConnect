@@ -5,7 +5,10 @@ import ProtectedRoute from './components/layout/ProtectedRoute.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/auth/Login.jsx';
 import Register from './pages/auth/Register.jsx';
+import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 import Profile from './pages/dashboard/Profile.jsx';
+import Browse from './pages/dashboard/Browse.jsx';
+import ArtisanPublicProfile from './pages/artisan/ArtisanPublicProfile.jsx';
 
 function App() {
   return (
@@ -16,17 +19,22 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/artisan/:id" element={<ArtisanPublicProfile />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Placeholder title="Dashboard" />} />
-            <Route path="/browse" element={<Placeholder title="Browse Artisans" />} />
             <Route path="/bookings" element={<Placeholder title="My Bookings" />} />
             <Route path="/messages" element={<Placeholder title="Messages" />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/earnings" element={<Placeholder title="Earnings" />} />
             <Route path="/settings" element={<Placeholder title="Settings" />} />
             <Route path="/reviews" element={<Placeholder title="My Reviews" />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+            <Route path="/browse" element={<Browse />} />
           </Route>
 
           {/* 404 */}

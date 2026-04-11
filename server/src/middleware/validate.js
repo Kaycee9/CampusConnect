@@ -13,7 +13,17 @@ const validate = (schema, source = 'body') => {
       }));
       return res.status(400).json({ error: 'Validation failed', details: errors });
     }
-    req[source] = result.data; // Replace with validated + transformed data
+
+    if (source === 'body') {
+      req.body = result.data;
+    } else if (source === 'query') {
+      req.validatedQuery = result.data;
+    } else if (source === 'params') {
+      req.validatedParams = result.data;
+    } else {
+      req.validatedData = result.data;
+    }
+
     next();
   };
 };

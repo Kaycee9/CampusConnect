@@ -715,9 +715,7 @@ Content-Type: application/json
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | GET | `/me` | Yes | Get own profile |
-| PATCH | `/me` | Yes | Update own profile |
-| PATCH | `/me/avatar` | Yes | Upload/update profile photo |
-| PATCH | `/me/location` | Yes | Update GPS coordinates |
+| PUT | `/profile` | Yes | Update own profile, avatar, and GPS coordinates |
 
 #### Artisan Routes — `/api/v1/artisans`
 | Method | Endpoint | Auth | Description |
@@ -880,22 +878,25 @@ Landing -> Multi-step Register -> Dashboard
 
 ### Stage 2: Authentication & User Management — COMPLETED
 - [x] Backend: Auth routes (register, login, refresh, logout, getMe)
+- [x] Backend: Forgot-password and reset-password flows
 - [x] Backend: Student & Artisan profile creation on registration (Prisma transactions)
 - [x] Frontend: Register flow (student & artisan onboarding)
 - [x] Frontend: Login with AuthContext
 - [x] Frontend: AuthContext with protected routes
 - [x] Profile view and edit (both roles)
 - [x] Profile photo upload (Cloudinary via Multer stream)
+- [x] GPS capture on signup and profile update
 - [x] Code audit: Fixed 8 bugs (schema/controller mismatches, import issues, stale props)
 
-### Stage 3: Discovery & Artisan Listings (Est. 2–3 days) — UP NEXT
-- [ ] Backend: Artisan listing API with geo-sorting and filtering
-- [ ] Frontend: Browse page with artisan cards grid
-- [ ] Frontend: Filter sidebar (category, rating, price)
-- [ ] Frontend: Search bar
-- [ ] Frontend: Artisan public profile page
-- [ ] Frontend: Geolocation permission + coordinate capture
-- [ ] Frontend: Map view (optional enhancement)
+### Stage 3: Discovery & Artisan Listings — COMPLETED (April 11, 2026)
+- [x] Backend: Artisan listing API with geo-sorting and filtering
+- [x] Frontend: Browse page with artisan cards grid
+- [x] Frontend: Filter sidebar (category, rating, price)
+- [x] Frontend: Search bar
+- [x] Frontend: Artisan public profile page
+- [x] Frontend: Geolocation permission + coordinate capture
+- [x] Student-only browse access enforced at the route level
+- [ ] Frontend: Map view (intentionally not in scope for this release)
 
 ### Stage 4: Booking System (Est. 3–4 days)
 - [ ] Backend: Full booking CRUD + state machine

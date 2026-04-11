@@ -102,6 +102,26 @@
   margin-top: var(--space-8);
 }
 
+.profile-location-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.profile-location-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
 .mb-4 {
   margin-bottom: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .profile-location-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
