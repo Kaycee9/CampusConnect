@@ -9,6 +9,9 @@ import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 import Profile from './pages/dashboard/Profile.jsx';
 import Browse from './pages/dashboard/Browse.jsx';
 import ArtisanPublicProfile from './pages/artisan/ArtisanPublicProfile.jsx';
+import Bookings from './pages/bookings/Bookings.jsx';
+import BookingRequest from './pages/bookings/BookingRequest.jsx';
+import BookingDetail from './pages/bookings/BookingDetail.jsx';
 
 function App() {
   return (
@@ -25,7 +28,8 @@ function App() {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Placeholder title="Dashboard" />} />
-            <Route path="/bookings" element={<Placeholder title="My Bookings" />} />
+            <Route path="/bookings" element={<Bookings />} />
+            <Route path="/bookings/:id" element={<BookingDetail />} />
             <Route path="/messages" element={<Placeholder title="Messages" />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/earnings" element={<Placeholder title="Earnings" />} />
@@ -35,6 +39,7 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
             <Route path="/browse" element={<Browse />} />
+            <Route path="/bookings/new" element={<BookingRequest />} />
           </Route>
 
           {/* 404 */}

@@ -259,6 +259,7 @@ The CampusConnect mark is a stylized interlocking "C·C" within a rounded square
 | FR-BOOK-03 | Only students can CANCEL a PENDING booking |
 | FR-BOOK-04 | System shall send in-app and email notifications on booking state changes |
 | FR-BOOK-05 | Bookings shall include: service address, scheduled date/time, service description, and agreed price |
+| FR-BOOK-06 | System shall support student-artisan price counter-offers on pending/accepted bookings with visible negotiation history |
 
 #### FR-COMMS: Messaging
 | ID | Requirement |
@@ -736,6 +737,7 @@ Content-Type: application/json
 | PATCH | `/:id/start` | Yes (artisan) | Mark as in-progress |
 | PATCH | `/:id/complete` | Yes (artisan) | Mark as completed |
 | PATCH | `/:id/cancel` | Yes (student) | Cancel a pending booking |
+| PATCH | `/:id/price` | Yes (student/artisan participant) | Send a price counter-offer |
 
 #### Message Routes — `/api/v1/messages`
 | Method | Endpoint | Auth | Description |
@@ -898,14 +900,15 @@ Landing -> Multi-step Register -> Dashboard
 - [x] Student-only browse access enforced at the route level
 - [ ] Frontend: Map view (intentionally not in scope for this release)
 
-### Stage 4: Booking System (Est. 3–4 days)
-- [ ] Backend: Full booking CRUD + state machine
-- [ ] Backend: Notification triggers on state changes
-- [ ] Frontend: Booking request form (student)
-- [ ] Frontend: Bookings dashboard (student) with status tracking
-- [ ] Frontend: Bookings dashboard (artisan) with accept/reject
-- [ ] Frontend: Booking detail page
-- [ ] Email notifications on booking events
+### Stage 4: Booking System — COMPLETED (April 11, 2026)
+- [x] Backend: Full booking CRUD + state machine
+- [x] Backend: Notification triggers on state changes
+- [x] Frontend: Booking request form (student)
+- [x] Frontend: Bookings dashboard (student) with status tracking
+- [x] Frontend: Bookings dashboard (artisan) with accept/reject
+- [x] Frontend: Booking detail page
+- [x] Email notifications on booking events
+- [x] Negotiation support: student/artisan counter-offers + timeline history in booking detail
 
 ### Stage 5: Real-Time Messaging (Est. 2–3 days)
 - [ ] Backend: Socket.io server setup + room management

@@ -1,5 +1,5 @@
 # CampusConnect — AI Continuation Handoff
-> **Last Updated:** April 11, 2026  
+> **Last Updated:** April 11, 2026 (Stage 4 update)  
 > **Purpose:** Enable any AI system to seamlessly continue development from the current state.
 
 ---
@@ -54,6 +54,15 @@
 - Logout now clears auth cookies explicitly and invalidates refresh tokens server-side
 - Student browse access is enforced at the route layer; artisans are redirected away from `/browse`
 
+### Stage 4: Booking System ✅
+- **Backend:** `booking.controller.js` + `booking.routes.js` now support booking request, list, detail, accept/reject/start/complete/cancel, and `PATCH /:id/price` counter-offers
+- **Backend:** in-app notifications + transactional emails on booking status changes and price offers
+- **Backend:** negotiation history timeline derived from booking negotiation notifications and returned on booking detail API
+- **Frontend:** booking request flow from artisan profile CTA to `/bookings/new`
+- **Frontend:** role-aware booking dashboards for students and artisans (`/bookings`)
+- **Frontend:** booking detail page with status actions, counter-offers, and negotiation history timeline (`/bookings/:id`)
+- **UI/UX:** booking copy polish and typography alignment with the purple tokenized design system
+
 ---
 
 ## 3. Current State — What Works Right Now
@@ -67,6 +76,9 @@
 | Dashboard (placeholder) | ✅ Working | `http://localhost:5173/dashboard` |
 | Browse artisans | ✅ Working | `http://localhost:5173/browse` |
 | Artisan public profile | ✅ Working | `http://localhost:5173/artisan/:id` |
+| Booking request form | ✅ Working | `http://localhost:5173/bookings/new?artisanId=:id` |
+| Bookings dashboard | ✅ Working | `http://localhost:5173/bookings` |
+| Booking detail + negotiation history | ✅ Working | `http://localhost:5173/bookings/:id` |
 | Profile edit + avatar upload | ✅ Working | `http://localhost:5173/profile` |
 | API health check | ✅ Working | `http://localhost:5000/api/v1/health` |
 
@@ -224,9 +236,15 @@ CampusConnect/
 │   │       │   └── Auth.css                 # Shared auth page styles
 │   │       ├── artisan/
 │   │       │   └── ArtisanPublicProfile.jsx # Public artisan detail page
-│   │       └── dashboard/
-│   │           ├── Profile.jsx + Profile.css # Profile edit page (both roles)
-│   │           └── Browse.jsx + Browse.css   # Student-only browse page
+│   │       ├── dashboard/
+│   │       │   └── Profile.jsx + Profile.css # Profile edit page (both roles)
+│   │       ├── student/
+│   │       │   └── Browse.jsx + Browse.css   # Student-only browse page
+│   │       └── bookings/
+│   │           ├── BookingRequest.jsx        # Student booking request form
+│   │           ├── Bookings.jsx              # Student/artisan bookings dashboard
+│   │           ├── BookingDetail.jsx         # Booking detail + status + negotiation timeline
+│   │           └── Bookings.css              # Shared booking page styles
 │   └── package.json
 │
 ├── server/
@@ -250,7 +268,7 @@ CampusConnect/
 │   │       ├── auth.routes.js               # POST register/login/refresh/logout, GET /me
 │   │       ├── user.routes.js               # PUT /profile (auth + multer + zod)
 │   │       ├── artisan.routes.js            # GET list/profile (Stage 3 complete)
-│   │       ├── booking.routes.js            # STUB — Stage 4
+│   │       ├── booking.routes.js            # Booking lifecycle + negotiation endpoints
 │   │       ├── message.routes.js            # STUB — Stage 5
 │   │       ├── payment.routes.js            # STUB — Stage 6
 │   │       └── review.routes.js             # STUB — Stage 7
@@ -271,7 +289,7 @@ CampusConnect/
 | Stage | Name | Key Deliverables | Est. |
 |-------|------|-----------------|------|
 | **3** | **Discovery & Artisan Listings** | Artisan API, Browse grid, Search/Filter, Public profile | Completed |
-| 4 | Booking System | Booking CRUD, state machine, student/artisan dashboards | 3–4 days |
+| **4** | **Booking System** | Booking CRUD/state machine, notification + email triggers, role-aware dashboards, detail + negotiation history | Completed |
 | 5 | Real-Time Messaging | Socket.io chat, conversation list, unread badges | 2–3 days |
 | 6 | Payments | Paystack integration, webhook, earnings dashboard | 2–3 days |
 | 7 | Reviews & Ratings | Post-completion reviews, artisan rating aggregation | 1–2 days |
@@ -320,4 +338,4 @@ cd server && npx prisma studio    # Visual DB browser
 
 ---
 
-*This document is designed to be self-contained. An AI system reading this file + the MASTER_PLAN.md + the Prisma schema should have everything needed to continue building CampusConnect from Stage 3 onward.*
+*This document is designed to be self-contained. An AI system reading this file + the MASTER_PLAN.md + the Prisma schema should have everything needed to continue building CampusConnect from Stage 5 onward.*

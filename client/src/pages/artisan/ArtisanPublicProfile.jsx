@@ -185,7 +185,17 @@ export default function ArtisanPublicProfile() {
   };
 
   const handleBookNow = () => {
-    navigate(user ? '/bookings' : '/login');
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (user.role !== 'STUDENT') {
+      navigate('/dashboard');
+      return;
+    }
+
+    navigate(`/bookings/new?artisan=${artisan.id}`);
   };
 
   const page = <ArtisanProfilePage artisan={artisan} onBack={handleBack} onBookNow={handleBookNow} />;

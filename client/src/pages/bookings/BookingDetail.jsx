@@ -1,0 +1,273 @@
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { CalendarCheck, MapPin, MessageSquare } from 'lucide-react';
+import api from '../../lib/api.js';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useToast } from '../../components/ui/Toast.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Badge from '../../components/ui/Badge.jsx';
+import Avatar from '../../components/ui/Avatar.jsx';
+import './Bookings.css';
+
+const formatBookingTitle = (title = '') => {
+  if (!title) return 'Service request';
+  const isMostlyUppercase = title === title.toUpperCase();
+  if (!isMostlyUppercase) return title;
+  return title
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+export default function BookingDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const toast = useToast();
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [negotiationHistory, setNegotiationHistory] = useState([]);
+  const [counterPrice, setCounterPrice] = useState('');
+  const [counterNote, setCounterNote] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/bookings/${id}`);
+      setBooking(data.booking);
+      setNegotiationHistory(data.negotiationHistory || []);
+      setCounterPrice(data.booking?.agreedPrice ?? '');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to load this booking right now.');
+      navigate('/bookings');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, navigate, toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const action = async (name) => {
+    setBusy(true);
+    try {
+      await api.patch(`/bookings/${id}/${name}`, name === 'reject' ? { rejectionReason: 'I cannot take this job at the requested time.' } : {});
+      const successMap = {
+        cancel: 'Booking cancelled.',
+        reject: 'Booking rejected.',
+        start: 'Job marked as in progress.',
+        complete: 'Job marked as completed.',
+      };
+      toast.success(successMap[name] || 'Booking updated successfully.');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to update booking status.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitCounterOffer = async () => {
+    if (!counterPrice || Number(counterPrice) <= 0) {
+      toast.error('Enter a valid positive price');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await api.patch(`/bookings/${id}/price`, {
+        agreedPrice: Number(counterPrice),
+        note: counterNote.trim() || undefined,
+      });
+      toast.success('Price offer sent.');
+      setCounterNote('');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to send price offer.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const acceptAtPrice = async () => {
+    if (counterPrice !== '' && Number(counterPrice) <= 0) {
+      toast.error('Enter a valid positive price');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const payload = counterPrice === '' ? {} : { agreedPrice: Number(counterPrice) };
+      await api.patch(`/bookings/${id}/accept`, payload);
+      toast.success('Booking accepted.');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to accept this booking.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: 'var(--space-8)' }}>Loading booking...</div>;
+  }
+
+  if (!booking) {
+    return <div style={{ padding: 'var(--space-8)' }}>Booking not found.</div>;
+  }
+
+  const isStudent = user?.role === 'STUDENT';
+  const isArtisan = user?.role === 'ARTISAN';
+  const displayTitle = formatBookingTitle(booking.title);
+
+  return (
+    <section className="booking-detail-page animate-fade-in">
+      <div className="booking-detail-toolbar">
+        <Button variant="ghost" onClick={() => navigate('/bookings')}>
+          Back to bookings
+        </Button>
+      </div>
+
+      <div className="booking-detail card">
+        <div className="booking-detail__header">
+          <div className="booking-detail__headline">
+            <small className="booking-detail__eyebrow">Service booking</small>
+            <h1>{displayTitle}</h1>
+            <p>Review service details, update status, and manage price offers.</p>
+          </div>
+          <Badge status={booking.status} dot>
+            {booking.status.replace('_', ' ')}
+          </Badge>
+        </div>
+
+        <div className="booking-detail__meta">
+          <span><CalendarCheck size={16} /> {new Date(booking.scheduledAt).toLocaleString()}</span>
+          <span><MapPin size={16} /> {booking.address}</span>
+        </div>
+
+        <div className="booking-detail__brief">
+          <h3>Service brief</h3>
+          <p>{booking.description}</p>
+        </div>
+
+        <div className="booking-detail__people">
+          <div className="booking-detail__person-card">
+            <h3>Artisan</h3>
+            <div className="booking-detail__person">
+              <Avatar src={booking.artisan?.avatarUrl} name={booking.artisan?.fullName} size="sm" />
+              <span>{booking.artisan?.fullName}</span>
+            </div>
+          </div>
+          <div className="booking-detail__person-card">
+            <h3>Student</h3>
+            <div className="booking-detail__person">
+              <Avatar name={`${booking.student?.studentProfile?.firstName || ''} ${booking.student?.studentProfile?.lastName || ''}`} size="sm" />
+              <span>{booking.student?.studentProfile?.firstName} {booking.student?.studentProfile?.lastName}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="booking-detail__footer">
+          <div className="booking-detail__price">
+            <small>Current offer</small>
+            <strong>{booking.agreedPrice == null ? 'Price pending' : `NGN ${Number(booking.agreedPrice).toLocaleString()}`}</strong>
+          </div>
+          <div className="booking-detail__actions">
+            {isStudent && booking.status === 'PENDING' && (
+              <>
+                <Button variant="ghost" loading={busy} onClick={() => action('cancel')}>
+                  Cancel booking
+                </Button>
+                <Button variant="ghost" loading={busy} onClick={submitCounterOffer}>
+                  Send price offer
+                </Button>
+              </>
+            )}
+            {isArtisan && booking.status === 'PENDING' && (
+              <>
+                <Button variant="ghost" loading={busy} onClick={() => action('reject')}>
+                  Reject
+                </Button>
+                <Button loading={busy} onClick={acceptAtPrice}>
+                  Accept request
+                </Button>
+                <Button variant="ghost" loading={busy} onClick={submitCounterOffer}>
+                  Send counter-offer
+                </Button>
+              </>
+            )}
+            {isArtisan && booking.status === 'ACCEPTED' && (
+              <Button loading={busy} onClick={() => action('start')}>
+                Mark in progress
+              </Button>
+            )}
+            {isArtisan && booking.status === 'IN_PROGRESS' && (
+              <Button loading={busy} onClick={() => action('complete')}>
+                Mark completed
+              </Button>
+            )}
+            <Button variant="ghost" icon={MessageSquare} onClick={() => navigate('/messages')}>
+              Open chat
+            </Button>
+          </div>
+        </div>
+
+        {['PENDING', 'ACCEPTED'].includes(booking.status) && (
+          <div className="booking-counter card">
+            <h3>Price negotiation</h3>
+            <p>Use this when scope or material costs change. Both sides can send offers while the booking is pending or accepted.</p>
+            <div className="booking-counter__row">
+              <div className="booking-filters__field">
+                <label>Proposed price</label>
+                <input
+                  type="number"
+                  className="booking-filters__search"
+                  value={counterPrice}
+                  min="1"
+                  onChange={(e) => setCounterPrice(e.target.value)}
+                  placeholder="Enter new proposed price"
+                />
+              </div>
+              <div className="booking-filters__field">
+                <label>Negotiation note</label>
+                <input
+                  type="text"
+                  className="booking-filters__search"
+                  value={counterNote}
+                  maxLength={250}
+                  onChange={(e) => setCounterNote(e.target.value)}
+                  placeholder="Optional note (materials, timeline, scope updates)"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {negotiationHistory.length > 0 && (
+          <div className="booking-negotiation-history card">
+            <h3>Negotiation history</h3>
+            <p>Latest offer appears first.</p>
+            <ul>
+              {negotiationHistory.map((entry) => {
+                const actorLabel = entry.by === 'artisan' ? 'Artisan' : entry.by === 'student' ? 'Student' : 'Participant';
+                return (
+                  <li key={entry.id} className="booking-negotiation-history__item">
+                    <div className="booking-negotiation-history__top">
+                      <strong>{entry.actorName || actorLabel}</strong>
+                      <span>{new Date(entry.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div className="booking-negotiation-history__amount">
+                      {entry.proposedPrice == null ? 'No price set' : `NGN ${Number(entry.proposedPrice).toLocaleString()}`}
+                    </div>
+                    {entry.note && <p>{entry.note}</p>}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

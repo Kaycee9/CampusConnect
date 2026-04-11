@@ -13,51 +13,77 @@ Import in `index.html`:
 :root {
   /* === COLORS === */
 
-  /* Primary — Brand Blue */
-  --color-primary-50:  #EFF6FF;
-  --color-primary-100: #DBEAFE;
-  --color-primary-400: #3B82F6;
-  --color-primary-500: #2563EB;
-  --color-primary-600: #1D4ED8;
-  --color-primary-700: #1E40AF;
+  /* Primary — Vibrant Purple */
+  --color-primary-50:  #FAF5FF;
+  --color-primary-100: #F3E8FF;
+  --color-primary-200: #E9D5FF;
+  --color-primary-300: #D8B4FE;
+  --color-primary-400: #C084FC;
+  --color-primary-500: #7C3AED;
+  --color-primary-600: #6D28D9;
+  --color-primary-700: #5B21B6;
+  --color-primary-800: #4C1D95;
 
   /* Accent — Amber */
   --color-accent-50:   #FFFBEB;
+  --color-accent-100:  #FEF3C7;
   --color-accent-400:  #FBBF24;
   --color-accent-500:  #F59E0B;
   --color-accent-600:  #D97706;
 
   /* Semantics */
-  --color-success:     #10B981;
-  --color-success-bg:  #ECFDF5;
-  --color-error:       #EF4444;
-  --color-error-bg:    #FEF2F2;
-  --color-warning:     #F97316;
-  --color-warning-bg:  #FFF7ED;
-  --color-info:        #3B82F6;
-  --color-info-bg:     #EFF6FF;
+  --color-success-50:  #ECFDF5;
+  --color-success-100: #D1FAE5;
+  --color-success-500: #10B981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
 
-  /* Neutrals */
-  --color-neutral-900: #0F172A;
-  --color-neutral-800: #1E293B;
-  --color-neutral-700: #334155;
-  --color-neutral-600: #475569;
-  --color-neutral-500: #64748B;
-  --color-neutral-400: #94A3B8;
-  --color-neutral-300: #CBD5E1;
-  --color-neutral-200: #E2E8F0;
-  --color-neutral-100: #F1F5F9;
-  --color-neutral-50:  #F8FAFC;
+  --color-error-50:    #FEF2F2;
+  --color-error-100:   #FEE2E2;
+  --color-error-500:   #EF4444;
+  --color-error-600:   #DC2626;
+  --color-error-700:   #B91C1C;
+
+  --color-warning-50:  #FFF7ED;
+  --color-warning-100: #FFEDD5;
+  --color-warning-500: #F97316;
+  --color-warning-600: #EA580C;
+
+  --color-info-50:     #EFF6FF;
+  --color-info-500:    #3B82F6;
+
+  /* Backward-compatible aliases used in component specs below */
+  --color-success:     var(--color-success-500);
+  --color-success-bg:  var(--color-success-50);
+  --color-error:       var(--color-error-500);
+  --color-error-bg:    var(--color-error-50);
+  --color-warning:     var(--color-warning-500);
+  --color-warning-bg:  var(--color-warning-50);
+  --color-info:        var(--color-info-500);
+  --color-info-bg:     var(--color-info-50);
+
+  /* Neutrals (Zinc) */
+  --color-neutral-50:  #FAFAFA;
+  --color-neutral-100: #F4F4F5;
+  --color-neutral-200: #E4E4E7;
+  --color-neutral-300: #D4D4D8;
+  --color-neutral-400: #A1A1AA;
+  --color-neutral-500: #71717A;
+  --color-neutral-600: #52525B;
+  --color-neutral-700: #3F3F46;
+  --color-neutral-800: #27272A;
+  --color-neutral-900: #09090B;
 
   /* Surfaces */
   --color-surface:     #FFFFFF;
   --color-surface-2:   #F8FAFC;
   --color-bg:          #F8FAFC;
+  --color-overlay:     rgba(15, 23, 42, 0.5);
 
   /* Text */
-  --color-text-primary:   var(--color-neutral-900);
-  --color-text-secondary: var(--color-neutral-700);
-  --color-text-muted:     var(--color-neutral-400);
+  --color-text-primary:   #09090B;
+  --color-text-secondary: #52525B;
+  --color-text-muted:     #A1A1AA;
   --color-text-inverse:   #FFFFFF;
 
   /* === TYPOGRAPHY === */
