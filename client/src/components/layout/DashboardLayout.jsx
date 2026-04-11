@@ -4,14 +4,14 @@ import Sidebar from './Sidebar.jsx';
 import BottomNav from './BottomNav.jsx';
 import './DashboardLayout.css';
 
-export default function DashboardLayout({ user, onLogout }) {
+export default function DashboardLayout({ children }) {
   return (
     <div className="dashboard-layout">
-      <Navbar user={user} onLogout={onLogout} />
+      <Navbar />
       <div className="dashboard-layout__body">
-        <Sidebar role={user?.role} />
-        <main className="dashboard-layout__main">
-          <Outlet />
+        <Sidebar />
+        <main className="dashboard-layout__content">
+          {children}
         </main>
       </div>
       <BottomNav />

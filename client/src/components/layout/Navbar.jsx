@@ -1,11 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Bell, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import Avatar from '../ui/Avatar.jsx';
 import './Navbar.css';
 
-export default function Navbar({ user, onLogout }) {
+export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isAuth = !!user;
@@ -57,7 +59,7 @@ export default function Navbar({ user, onLogout }) {
                   <Link to="/earnings" className="navbar__dropdown-item">Earnings</Link>
                 )}
                 <div className="navbar__dropdown-divider" />
-                <button className="navbar__dropdown-item navbar__dropdown-item--danger" onClick={onLogout}>
+                <button className="navbar__dropdown-item navbar__dropdown-item--danger" onClick={logout}>
                   Log out
                 </button>
               </div>

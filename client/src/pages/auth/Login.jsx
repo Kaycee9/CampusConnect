@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Button from '../../components/ui/Button.jsx';
 import './Auth.css';
@@ -9,6 +10,9 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -29,8 +33,13 @@ export default function Login() {
     }
 
     setLoading(true);
-    // TODO: Stage 2 — call api.post('/auth/login', form)
-    setTimeout(() => setLoading(false), 1500);
+    const { success } = await login(form);
+    setLoading(false);
+    
+    if (success) {
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
+    }
   };
 
   return (

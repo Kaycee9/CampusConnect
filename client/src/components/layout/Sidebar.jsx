@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Search, CalendarCheck, MessageSquare,
   User, Settings, Wallet, Star
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import './Sidebar.css';
 
 const STUDENT_LINKS = [
@@ -23,7 +24,9 @@ const ARTISAN_LINKS = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-export default function Sidebar({ role = 'STUDENT' }) {
+export default function Sidebar() {
+  const { user } = useAuth();
+  const role = user?.role || 'STUDENT';
   const links = role === 'ARTISAN' ? ARTISAN_LINKS : STUDENT_LINKS;
 
   return (

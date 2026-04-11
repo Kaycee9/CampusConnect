@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, MapPin, ArrowRight, ArrowLeft, Wrench, FileText, DollarSign } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Button from '../../components/ui/Button.jsx';
 import './Auth.css';
@@ -13,6 +14,8 @@ const SERVICE_CATEGORIES = [
 export default function Register() {
   const [searchParams] = useSearchParams();
   const initialRole = searchParams.get('role') === 'artisan' ? 'ARTISAN' : '';
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
   const [role, setRole] = useState(initialRole);
@@ -61,8 +64,13 @@ export default function Register() {
     e.preventDefault();
     if (!validateStep()) return;
     setLoading(true);
-    // TODO: Stage 2 — call api.post('/auth/register', { role, ...form })
-    setTimeout(() => setLoading(false), 1500);
+    
+    const { success } = await register({ role, ...form });
+    setLoading(false);
+    
+    if (success) {
+      navigate('/dashboard', { replace: true });
+    }
   };
 
   return (
