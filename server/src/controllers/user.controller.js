@@ -19,10 +19,8 @@ export const updateProfile = async (req, res) => {
     const userId = req.user.userId;
     const role = req.user.role;
     
-    // Extracted from req.body (Zod will validate this in the route)
     const {
       firstName, lastName, phone, address, 
-      // Artisan specific
       bio, category, startingPrice, yearsExp
     } = req.body;
 
@@ -33,7 +31,7 @@ export const updateProfile = async (req, res) => {
       try {
         const result = await uploadStream(req.file.buffer, {
           folder: 'campus-connect/avatars',
-          transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'face' }], // Pre-crop to 500x500
+          transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'face' }],
         });
         avatarUrl = result.secure_url;
       } catch (uploadError) {
@@ -42,22 +40,15 @@ export const updateProfile = async (req, res) => {
       }
     }
 
-    // 1. Update base User record (First/Last name)
-    const updatedUser = await db.user.update({
-      where: { id: userId },
-      data: {
-        ...(firstName && { firstName }),
-        ...(lastName && { lastName }),
-      },
-    });
-
     let updatedProfile;
 
-    // 2. Update specific Profile record
+    // firstName and lastName live on the PROFILE models, not on User
     if (role === 'STUDENT') {
       updatedProfile = await db.studentProfile.update({
         where: { userId },
         data: {
+          ...(firstName && { firstName }),
+          ...(lastName && { lastName }),
           ...(phone && { phone }),
           ...(address && { address }),
           ...(avatarUrl && { avatarUrl }),
@@ -67,6 +58,8 @@ export const updateProfile = async (req, res) => {
       updatedProfile = await db.artisanProfile.update({
         where: { userId },
         data: {
+          ...(firstName && { firstName }),
+          ...(lastName && { lastName }),
           ...(phone && { phone }),
           ...(address && { address }),
           ...(bio && { bio }),
@@ -78,16 +71,17 @@ export const updateProfile = async (req, res) => {
       });
     }
 
+    // Fetch the complete user object for the response
+    const fullUser = await db.user.findUnique({
+      where: { id: userId },
+      include: { studentProfile: true, artisanProfile: true },
+    });
+
+    const { passwordHash: _, ...userWithoutPassword } = fullUser;
+
     res.json({
       message: 'Profile updated successfully',
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        role: updatedUser.role,
-        ...(role === 'STUDENT' ? { studentProfile: updatedProfile } : { artisanProfile: updatedProfile })
-      }
+      user: userWithoutPassword,
     });
 
   } catch (error) {

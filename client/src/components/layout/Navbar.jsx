@@ -40,11 +40,11 @@ export default function Navbar() {
               </button>
               <div className="navbar__user" onClick={() => setMenuOpen(!menuOpen)}>
                 <Avatar
-                  src={user.avatarUrl}
-                  name={`${user.firstName} ${user.lastName}`}
+                  src={user.studentProfile?.avatarUrl || user.artisanProfile?.avatarUrl}
+                  name={`${user.studentProfile?.firstName || user.artisanProfile?.firstName || ''} ${user.studentProfile?.lastName || user.artisanProfile?.lastName || ''}`}
                   size="sm"
                 />
-                <span className="navbar__user-name">{user.firstName}</span>
+                <span className="navbar__user-name">{user.studentProfile?.firstName || user.artisanProfile?.firstName}</span>
               </div>
             </nav>
 

@@ -23,7 +23,7 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
   }
 
   return (
-    <DashboardLayout user={user}>
+    <DashboardLayout>
       <Outlet />
     </DashboardLayout>
   );

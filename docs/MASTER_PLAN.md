@@ -71,14 +71,15 @@ The brand speaks like a smart, friendly campus mate — not a corporation. It re
 **Tagline:** *"Your campus. Your crew."*  
 **Sub-tagline:** *"Trusted services, right where you are."*
 
-### Color Palette
+### Color Palette *(Updated: Purple & Black theme — April 2026)*
 
 ```
-PRIMARY (Brand Blue — Trust + Technology)
-  --color-primary-500: #2563EB   /* Vivid blue — CTAs, links, key actions */
-  --color-primary-400: #3B82F6   /* Hover states */
-  --color-primary-600: #1D4ED8   /* Active/pressed states */
-  --color-primary-50:  #EFF6FF   /* Tinted backgrounds */
+PRIMARY (Vibrant Purple — Trust + Premium)
+  --color-primary-500: #7C3AED   /* Vivid amethyst — CTAs, links, key actions */
+  --color-primary-400: #C084FC   /* Hover states */
+  --color-primary-600: #6D28D9   /* Active/pressed states */
+  --color-primary-700: #5B21B6   /* Deep accents */
+  --color-primary-50:  #FAF5FF   /* Tinted backgrounds */
 
 ACCENT (Amber — Energy + Opportunity)
   --color-accent-500:  #F59E0B   /* Stars, highlights, badges */
@@ -86,20 +87,22 @@ ACCENT (Amber — Energy + Opportunity)
   --color-accent-50:   #FFFBEB   /* Tinted */
 
 SUCCESS / AVAILABLE
-  --color-success:     #10B981   /* Booking confirmed, online status */
+  --color-success-500: #10B981   /* Booking confirmed, online status */
 
 ERROR / ALERT
-  --color-error:       #EF4444   /* Validation errors, rejected bookings */
+  --color-error-500:   #EF4444   /* Validation errors, rejected bookings */
 
 WARNING
-  --color-warning:     #F97316   /* Pending states */
+  --color-warning-500: #F97316   /* Pending states */
 
-NEUTRALS (Background + Text)
-  --color-neutral-900: #0F172A   /* Primary text */
-  --color-neutral-700: #334155   /* Secondary text */
-  --color-neutral-400: #94A3B8   /* Muted/placeholder */
-  --color-neutral-100: #F1F5F9   /* Card backgrounds */
-  --color-neutral-50:  #F8FAFC   /* Page backgrounds */
+NEUTRALS (Zinc scale — Background + Text)
+  --color-neutral-950: #09090B   /* Deepest black — hero panels, footers */
+  --color-neutral-900: #18181B   /* Primary text */
+  --color-neutral-700: #3F3F46   /* Secondary text */
+  --color-neutral-400: #A1A1AA   /* Muted/placeholder */
+  --color-neutral-200: #E4E4E7   /* Borders */
+  --color-neutral-100: #F4F4F5   /* Card backgrounds */
+  --color-neutral-50:  #FAFAFA   /* Page backgrounds */
   --color-surface:     #FFFFFF   /* Cards, modals */
 ```
 
@@ -875,16 +878,17 @@ Landing -> Multi-step Register -> Dashboard
 - [x] Implement Auth pages (Login, Register multi-step for both roles)
 - [x] Create responsive dashboard layout
 
-### Stage 2: Authentication & User Management (Est. 2–3 days) — UP NEXT
-- [ ] Backend: Auth routes (register, login, refresh, verify, reset)
-- [ ] Backend: Student & Artisan profile creation on registration
-- [ ] Frontend: Register flow (student & artisan onboarding)
-- [ ] Frontend: Login, forgot password, email verification
-- [ ] Frontend: AuthContext with protected routes
-- [ ] Profile view and edit (both roles)
-- [ ] Profile photo upload (Cloudinary)
+### Stage 2: Authentication & User Management — COMPLETED
+- [x] Backend: Auth routes (register, login, refresh, logout, getMe)
+- [x] Backend: Student & Artisan profile creation on registration (Prisma transactions)
+- [x] Frontend: Register flow (student & artisan onboarding)
+- [x] Frontend: Login with AuthContext
+- [x] Frontend: AuthContext with protected routes
+- [x] Profile view and edit (both roles)
+- [x] Profile photo upload (Cloudinary via Multer stream)
+- [x] Code audit: Fixed 8 bugs (schema/controller mismatches, import issues, stale props)
 
-### Stage 3: Discovery & Artisan Listings (Est. 2–3 days)
+### Stage 3: Discovery & Artisan Listings (Est. 2–3 days) — UP NEXT
 - [ ] Backend: Artisan listing API with geo-sorting and filtering
 - [ ] Frontend: Browse page with artisan cards grid
 - [ ] Frontend: Filter sidebar (category, rating, price)

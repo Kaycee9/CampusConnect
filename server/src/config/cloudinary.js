@@ -1,4 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinaryPkg from 'cloudinary';
+const cloudinary = cloudinaryPkg.v2;
 import env from './env.js';
 
 // Configure Cloudinary SDK with environment secrets

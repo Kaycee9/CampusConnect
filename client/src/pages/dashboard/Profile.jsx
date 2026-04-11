@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../../../contexts/AuthContext.jsx';
-import api from '../../../lib/api.js';
-import { useToast } from '../../../components/ui/Toast.jsx';
-import Input from '../../../components/ui/Input.jsx';
-import Button from '../../../components/ui/Button.jsx';
-import Avatar from '../../../components/ui/Avatar.jsx';
+import { useState, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import api from '../../lib/api.js';
+import { useToast } from '../../components/ui/Toast.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Avatar from '../../components/ui/Avatar.jsx';
 import { Camera, User as UserIcon, MapPin, Phone, Briefcase, FileText, DollarSign } from 'lucide-react';
 import './Profile.css';
 
@@ -14,18 +14,15 @@ const CATEGORIES = [
 ];
 
 export default function Profile() {
-  const { user, login } = useAuth(); // We'll use login internally just to update AuthContext if needed, though getMe is preferred. Wait, we can just update local state or trigger a reload. Actually, `useAuth` user is immutable from here unless configured natively. 
-  // Wait! Our AuthContext `setUser` isn't exported. We might need to refresh the page or recall an api to getMe.
-  // Instead of passing setUser, we can just do a fast fetch to `/auth/me` to refresh the global state.
-  
+  const { user } = useAuth();
   const toast = useToast();
   const fileInputRef = useRef(null);
   
   const profileData = user.role === 'ARTISAN' ? user.artisanProfile : user.studentProfile;
 
   const [form, setForm] = useState({
-    firstName: user.firstName || '',
-    lastName: user.lastName || '',
+    firstName: profileData?.firstName || '',
+    lastName: profileData?.lastName || '',
     phone: profileData?.phone || '',
     address: profileData?.address || '',
     bio: profileData?.bio || '',
@@ -103,7 +100,7 @@ export default function Profile() {
             <div className="profile-avatar-wrapper" onClick={() => fileInputRef.current.click()}>
               <Avatar 
                 src={avatarPreview} 
-                name={`${user.firstName} ${user.lastName}`} 
+                name={`${profileData?.firstName || ''} ${profileData?.lastName || ''}`} 
                 size="xl" 
               />
               <div className="profile-avatar-overlay">

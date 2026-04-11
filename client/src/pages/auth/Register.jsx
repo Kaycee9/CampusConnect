@@ -65,7 +65,8 @@ export default function Register() {
     if (!validateStep()) return;
     setLoading(true);
     
-    const { success } = await register({ role, ...form });
+    const { confirmPassword, ...payload } = form;
+    const { success } = await register({ role, ...payload });
     setLoading(false);
     
     if (success) {

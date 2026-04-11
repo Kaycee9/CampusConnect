@@ -17,27 +17,38 @@ export const register = async (req, res) => {
 
     // Create user and profile in a transaction
     const user = await db.$transaction(async (prisma) => {
+      // User model uses `passwordHash` (matches schema.prisma)
       const newUser = await prisma.user.create({
-        data: { email, password: hashedPassword, firstName, lastName, role },
+        data: { email, passwordHash: hashedPassword, role },
       });
 
       if (role === 'STUDENT') {
         await prisma.studentProfile.create({
-          data: { userId: newUser.id },
+          data: {
+            userId: newUser.id,
+            firstName,
+            lastName,
+          },
         });
       } else if (role === 'ARTISAN') {
         await prisma.artisanProfile.create({
           data: {
             userId: newUser.id,
+            firstName,
+            lastName,
             category,
-            bio,
-            address,
+            bio: bio || null,
+            address: address || null,
             startingPrice: startingPrice ? Number(startingPrice) : null,
           },
         });
       }
 
-      return newUser;
+      // Return user with profile included
+      return prisma.user.findUnique({
+        where: { id: newUser.id },
+        include: { studentProfile: true, artisanProfile: true },
+      });
     });
 
     const { accessToken, refreshToken } = generateTokenPair(user.id, user.role);
@@ -53,7 +64,7 @@ export const register = async (req, res) => {
 
     setTokenCookies(res, accessToken, refreshToken);
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, ...userWithoutPassword } = user;
     res.status(201).json({ user: userWithoutPassword, accessToken });
 
   } catch (error) {
@@ -75,14 +86,12 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Schema field is `passwordHash`, not `password`
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Optional: revoke old valid refresh tokens to enforce single session per device,
-    // but for now we'll allow multiple sessions (desktop + mobile) and just generate a new one.
-    
     const { accessToken, refreshToken } = generateTokenPair(user.id, user.role);
 
     await db.refreshToken.create({
@@ -95,7 +104,7 @@ export const login = async (req, res) => {
 
     setTokenCookies(res, accessToken, refreshToken);
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, ...userWithoutPassword } = user;
     res.json({ user: userWithoutPassword, accessToken });
 
   } catch (error) {
@@ -118,12 +127,12 @@ export const refresh = async (req, res) => {
       include: { user: true },
     });
 
-    if (!savedToken || savedToken.revokedAt || savedToken.expiresAt < new Date()) {
+    if (!savedToken || savedToken.expiresAt < new Date()) {
       clearTokenCookies(res);
       return res.status(401).json({ error: 'Invalid or expired refresh token' });
     }
 
-    // Verify JWT struct
+    // Verify JWT signature
     try {
       jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     } catch (err) {
@@ -177,7 +186,6 @@ export const logout = async (req, res) => {
 
 export const getMe = async (req, res) => {
   try {
-    // req.user is set by the auth middleware
     const user = await db.user.findUnique({
       where: { id: req.user.userId },
       include: {
@@ -190,7 +198,7 @@ export const getMe = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, ...userWithoutPassword } = user;
     res.json({ user: userWithoutPassword });
   } catch (error) {
     console.error('GetMe error:', error);
