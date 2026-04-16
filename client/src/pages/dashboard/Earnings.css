@@ -415,4 +415,17 @@
   .earnings-kpis {
     grid-template-columns: 1fr;
   }
+
+  .earnings-hero,
+  .earnings-ledger,
+  .earnings-withdrawal,
+  .payment-item {
+    padding: var(--space-4);
+  }
+
+  .earnings-hero .btn,
+  .earnings-withdrawal__head .btn,
+  .payment-item__actions .btn {
+    width: 100%;
+  }
 }

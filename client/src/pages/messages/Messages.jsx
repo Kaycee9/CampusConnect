@@ -256,13 +256,13 @@ export default function Messages() {
       ? 'Negotiation finalized. Work is currently in progress.'
       : `Negotiation finalized at NGN ${Number(bookingSummary?.agreedPrice || 0).toLocaleString()}.`;
   const messageStats = [
-    { label: 'Conversations', value: conversations.length, icon: MessagesSquare },
-    { label: 'Unread', value: unreadTotal, icon: Mail },
-    { label: 'Status', value: 'Live', icon: BadgeCheck },
+    { label: 'Conversations', value: conversations.length, iconNode: <MessagesSquare size={16} /> },
+    { label: 'Unread', value: unreadTotal, iconNode: <Mail size={16} /> },
+    { label: 'Status', value: 'Live', iconNode: <BadgeCheck size={16} /> },
   ];
 
   return (
-    <section className="messages-page animate-fade-in">
+    <section className={`messages-page animate-fade-in ${activeConversationId ? 'messages-page--thread-open' : ''}`}>
       <div className="messages-page__hero card">
         <div>
           <small className="messages-page__eyebrow">Direct messages</small>
@@ -270,9 +270,9 @@ export default function Messages() {
           <p>Keep booking follow-ups, scope changes, and quick questions in one place.</p>
         </div>
         <div className="messages-page__stats">
-          {messageStats.map(({ label, value, icon: Icon }) => (
+          {messageStats.map(({ label, value, iconNode }) => (
             <div key={label} className="messages-page__stat">
-              <span className="messages-page__stat-icon"><Icon size={16} /></span>
+              <span className="messages-page__stat-icon">{iconNode}</span>
               <div>
                 <small>{label}</small>
                 <strong>{label === 'Status' ? (startingConversation ? 'Opening' : value) : value}</strong>
@@ -282,7 +282,7 @@ export default function Messages() {
         </div>
       </div>
 
-      <div className="messages-shell card">
+      <div className={`messages-shell card ${activeConversationId ? 'messages-shell--thread-open' : ''}`}>
         <aside className="messages-sidebar">
           <div className="messages-sidebar__header">
             <div>
@@ -361,6 +361,13 @@ export default function Messages() {
                     <p>{bookingSummary?.title ? `${bookingSummary.title} · ${activeConversation?.otherUser?.role || ''}` : (activeConversation?.otherUser?.role || '')}</p>
                   </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  className="messages-thread__back"
+                  onClick={() => navigate('/messages')}
+                >
+                  Back to inbox
+                </Button>
                 <Button variant="ghost" onClick={() => navigate('/bookings')}>
                   View bookings
                 </Button>

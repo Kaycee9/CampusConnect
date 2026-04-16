@@ -367,4 +367,27 @@
   .hero { padding: var(--space-10) 0; }
   .features__grid { grid-template-columns: 1fr; }
   .categories__grid { gap: var(--space-3); }
+
+  .hero__stats {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .hero__stat {
+    flex: 1;
+  }
+
+  .hero__stat-number {
+    font-size: var(--text-xl);
+  }
+
+  .hero__cta .btn,
+  .cta-section__buttons .btn {
+    width: 100%;
+  }
+
+  .cta-section__box {
+    padding: var(--space-8) var(--space-4);
+  }
 }

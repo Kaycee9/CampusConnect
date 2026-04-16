@@ -14,6 +14,7 @@
   align-items: center;
   justify-content: space-between;
   height: 100%;
+  gap: var(--space-2);
 }
 
 /* ── Logo ───────────────────────────────────────────────────────────────── */
@@ -132,6 +133,24 @@
   z-index: var(--z-dropdown);
 }
 
+@media (max-width: 639px) {
+  .navbar__logo {
+    max-width: calc(100vw - 130px);
+  }
+
+  .navbar__logo-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .navbar__dropdown {
+    right: var(--space-3);
+    left: var(--space-3);
+    min-width: 0;
+  }
+}
+
 .navbar__dropdown-item {
   display: block;
   width: 100%;
@@ -190,5 +209,16 @@
   }
   .navbar__user-name {
     display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .navbar__logo-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .navbar__logo-text {
+    font-size: var(--text-base);
   }
 }

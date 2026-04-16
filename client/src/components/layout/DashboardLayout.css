@@ -7,14 +7,17 @@
 .dashboard-layout__body {
   display: flex;
   flex: 1;
+  min-width: 0;
 }
 
 .dashboard-layout__content {
   flex: 1;
   padding: var(--space-6) var(--space-6);
   max-width: 100%;
+  min-width: 0;
   min-height: calc(100vh - var(--navbar-height));
   background: var(--color-bg);
+  overflow-x: hidden;
 }
 
 @media (max-width: 1023px) {

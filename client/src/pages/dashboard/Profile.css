@@ -126,8 +126,26 @@
 }
 
 @media (max-width: 640px) {
+  .profile-form {
+    padding: var(--space-5);
+  }
+
+  .profile-avatar-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
   .profile-location-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+  }
+
+  .profile-actions .btn {
+    width: 100%;
   }
 }

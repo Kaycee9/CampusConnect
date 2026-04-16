@@ -923,3 +923,32 @@
     font-size: var(--text-2xl);
   }
 }
+
+@media (max-width: 640px) {
+  .booking-card__actions,
+  .booking-detail__actions,
+  .booking-payment__head-right {
+    width: 100%;
+  }
+
+  .booking-card__actions .btn,
+  .booking-detail__actions .btn,
+  .booking-payment__head-right .btn {
+    width: 100%;
+  }
+
+  .booking-negotiation-history__top,
+  .booking-payment__timeline li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .booking-detail,
+  .booking-counter,
+  .booking-negotiation-history,
+  .booking-completion,
+  .booking-review,
+  .booking-payment {
+    padding: var(--space-4);
+  }
+}

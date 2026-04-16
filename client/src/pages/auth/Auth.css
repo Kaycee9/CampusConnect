@@ -213,7 +213,7 @@
 
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .auth-page {
     grid-template-columns: 1fr;
   }
@@ -225,5 +225,24 @@
   }
   .auth-form__row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-form__role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-form__step-actions,
+  .auth-form__options {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .auth-form__step-actions .btn,
+  .auth-form__options a {
+    width: 100%;
+    text-align: center;
   }
 }

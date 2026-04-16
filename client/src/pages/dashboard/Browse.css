@@ -119,3 +119,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 520px) {
+  .browse-filters {
+    padding: var(--space-4);
+  }
+
+  .browse-results-head,
+  .browse-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .browse-pagination .btn {
+    width: 100%;
+  }
+}

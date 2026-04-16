@@ -328,4 +328,22 @@
   .dashboard-booking__actions .button {
     flex: 1;
   }
+
+  .dashboard-page {
+    gap: var(--space-4);
+  }
+
+  .dashboard-kpi {
+    min-height: 68px;
+    padding: var(--space-3);
+  }
+
+  .dashboard-convo {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .dashboard-convo .badge {
+    grid-column: 2;
+    justify-self: end;
+  }
 }

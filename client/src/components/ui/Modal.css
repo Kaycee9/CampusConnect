@@ -63,3 +63,24 @@
 .modal__body {
   padding: var(--space-6);
 }
+
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: var(--space-2);
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: min(88vh, calc(100vh - var(--space-2)));
+  }
+
+  .modal__header,
+  .modal__body {
+    padding: var(--space-4);
+  }
+
+  .modal__title {
+    font-size: var(--text-base);
+  }
+}

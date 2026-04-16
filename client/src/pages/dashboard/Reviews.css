@@ -199,3 +199,15 @@
     min-width: 0;
   }
 }
+
+@media (max-width: 560px) {
+  .reviews-hero,
+  .reviews-pending,
+  .reviews-list {
+    padding: var(--space-4);
+  }
+
+  .reviews-pending__buttons .btn {
+    width: 100%;
+  }
+}
