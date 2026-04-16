@@ -63,6 +63,14 @@
 - **Frontend:** booking detail page with status actions, counter-offers, and negotiation history timeline (`/bookings/:id`)
 - **UI/UX:** booking copy polish and typography alignment with the purple tokenized design system
 
+### Stage 5: Real-Time Messaging ✅
+- **Backend:** `message.controller.js` + `message.routes.js` provide conversations, thread loading, send message, and mark-as-read flows
+- **Backend:** Socket.io authenticates with the access token and broadcasts new messages to participant rooms
+- **Backend:** new messages create notification records so unread surfaces can be extended later
+- **Frontend:** messaging inbox and thread UI at `/messages` and `/messages/:id`
+- **Frontend:** unread counts are surfaced in the inbox list
+- **Frontend:** booking detail now links directly into a participant conversation
+
 ---
 
 ## 3. Current State — What Works Right Now
@@ -269,7 +277,7 @@ CampusConnect/
 │   │       ├── user.routes.js               # PUT /profile (auth + multer + zod)
 │   │       ├── artisan.routes.js            # GET list/profile (Stage 3 complete)
 │   │       ├── booking.routes.js            # Booking lifecycle + negotiation endpoints
-│   │       ├── message.routes.js            # STUB — Stage 5
+│   │       ├── message.routes.js            # Conversation, chat, read-state, finalize endpoints
 │   │       ├── payment.routes.js            # STUB — Stage 6
 │   │       └── review.routes.js             # STUB — Stage 7
 │   ├── prisma/
@@ -290,7 +298,7 @@ CampusConnect/
 |-------|------|-----------------|------|
 | **3** | **Discovery & Artisan Listings** | Artisan API, Browse grid, Search/Filter, Public profile | Completed |
 | **4** | **Booking System** | Booking CRUD/state machine, notification + email triggers, role-aware dashboards, detail + negotiation history | Completed |
-| 5 | Real-Time Messaging | Socket.io chat, conversation list, unread badges | 2–3 days |
+| **5** | **Real-Time Messaging** | Socket.io chat, conversation list, unread badges | Completed |
 | 6 | Payments | Paystack integration, webhook, earnings dashboard | 2–3 days |
 | 7 | Reviews & Ratings | Post-completion reviews, artisan rating aggregation | 1–2 days |
 | 8 | Polish & Deployment | Testing, a11y, performance, Vercel/Railway deploy | 3–5 days |

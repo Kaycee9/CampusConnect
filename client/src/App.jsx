@@ -12,6 +12,7 @@ import ArtisanPublicProfile from './pages/artisan/ArtisanPublicProfile.jsx';
 import Bookings from './pages/bookings/Bookings.jsx';
 import BookingRequest from './pages/bookings/BookingRequest.jsx';
 import BookingDetail from './pages/bookings/BookingDetail.jsx';
+import Messages from './pages/messages/Messages.jsx';
 
 function App() {
   return (
@@ -30,7 +31,8 @@ function App() {
             <Route path="/dashboard" element={<Placeholder title="Dashboard" />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/bookings/:id" element={<BookingDetail />} />
-            <Route path="/messages" element={<Placeholder title="Messages" />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:id" element={<Messages />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/earnings" element={<Placeholder title="Earnings" />} />
             <Route path="/settings" element={<Placeholder title="Settings" />} />

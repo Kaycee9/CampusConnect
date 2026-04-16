@@ -120,6 +120,7 @@ export default function BookingDetail() {
   const isStudent = user?.role === 'STUDENT';
   const isArtisan = user?.role === 'ARTISAN';
   const displayTitle = formatBookingTitle(booking.title);
+  const chatParticipantId = isStudent ? booking.artisan?.user?.id : booking.student?.id;
 
   return (
     <section className="booking-detail-page animate-fade-in">
@@ -130,7 +131,8 @@ export default function BookingDetail() {
       </div>
 
       <div className="booking-detail card">
-        <div className="booking-detail__header">
+
+      <div className="booking-detail__header">
           <div className="booking-detail__headline">
             <small className="booking-detail__eyebrow">Service booking</small>
             <h1>{displayTitle}</h1>
@@ -207,7 +209,11 @@ export default function BookingDetail() {
                 Mark completed
               </Button>
             )}
-            <Button variant="ghost" icon={MessageSquare} onClick={() => navigate('/messages')}>
+            <Button
+              variant="ghost"
+              icon={MessageSquare}
+              onClick={() => navigate(chatParticipantId ? `/messages?bookingId=${booking.id}` : '/messages')}
+            >
               Open chat
             </Button>
           </div>

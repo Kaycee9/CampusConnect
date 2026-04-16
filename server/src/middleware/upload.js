@@ -16,7 +16,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB limit to prevent memory bloating and conserve Cloudinary bandwidth
+    fileSize: 5 * 1024 * 1024, // 5MB limit to allow larger profile pictures without excessive memory use
   },
   fileFilter,
 });

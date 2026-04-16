@@ -61,8 +61,8 @@ const serializeBooking = (booking) => ({
   review: booking.review || null,
 });
 
-const notifyUser = async ({ userId, title, body, type, metadata }) => {
-  await db.notification.create({
+const notifyUser = ({ userId, title, body, type, metadata }) => {
+  db.notification.create({
     data: {
       userId,
       title,
@@ -70,15 +70,15 @@ const notifyUser = async ({ userId, title, body, type, metadata }) => {
       type,
       metadata: metadata || undefined,
     },
+  }).catch((error) => {
+    console.error('Booking notification create failed:', error);
   });
 };
 
-const sendSafeEmail = async ({ to, subject, html }) => {
-  try {
-    await sendEmail({ to, subject, html });
-  } catch (error) {
+const sendSafeEmail = ({ to, subject, html }) => {
+  sendEmail({ to, subject, html }).catch((error) => {
     console.error('Booking email send failed:', error);
-  }
+  });
 };
 
 const toTitleCase = (value = '') => {
@@ -185,7 +185,7 @@ export const createBooking = async (req, res) => {
       },
     });
 
-    await notifyUser({
+    notifyUser({
       userId: artisan.userId,
       title: 'New booking request',
       body: `${student.firstName} ${student.lastName} sent a booking request for ${formatBookingTitle(title)}`,
@@ -193,7 +193,7 @@ export const createBooking = async (req, res) => {
       metadata: { bookingId: booking.id, artisanId },
     });
 
-    await sendSafeEmail({
+    sendSafeEmail({
       to: artisan.user.email,
       subject: 'New booking request on CampusConnect',
       html: `
@@ -319,7 +319,7 @@ const runStatusTransition = async (req, res, action) => {
     const artisanName = `${booking.artisan.firstName} ${booking.artisan.lastName}`.trim();
 
     if (config.actor === 'ARTISAN') {
-      await notifyUser({
+      notifyUser({
         userId: booking.studentId,
         title: `Booking ${toTitleCase(statusLabel)}`,
         body: `${artisanName} updated your booking to ${statusLabel}. Current offer: ${formatPrice(updatedBooking.agreedPrice)}.`,
@@ -338,7 +338,7 @@ const runStatusTransition = async (req, res, action) => {
         `,
       });
     } else {
-      await notifyUser({
+      notifyUser({
         userId: booking.artisan.userId,
         title: `Booking ${toTitleCase(statusLabel)}`,
         body: `${studentName || 'A student'} cancelled the booking request.`,
@@ -427,7 +427,7 @@ export const updateBookingPrice = async (req, res) => {
       note: req.body.note || null,
     };
 
-    await notifyUser({
+    notifyUser({
       userId: receiverUserId,
       title: 'Price counter-offer',
       body: `${actorName} proposed ${formatPrice(nextPrice)} for ${formatBookingTitle(booking.title)}.`,
@@ -435,7 +435,7 @@ export const updateBookingPrice = async (req, res) => {
       metadata,
     });
 
-    await notifyUser({
+    notifyUser({
       userId: isArtisanOwner ? booking.artisan.userId : booking.studentId,
       title: 'Price offer sent',
       body: `You proposed ${formatPrice(nextPrice)} for ${formatBookingTitle(booking.title)}.`,

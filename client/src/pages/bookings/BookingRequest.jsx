@@ -144,8 +144,8 @@ export default function BookingRequest() {
   }
 
   return (
-    <div className="booking-page container animate-fade-in">
-      <div className="booking-page__hero card">
+    <div className="booking-page booking-page--request container animate-fade-in">
+      <div className="booking-page__hero booking-page__hero--request card">
         <div className="booking-page__artisan">
           <Avatar src={artisan.avatarUrl} name={summary.name} size="lg" status={artisan.isAvailable ? 'online' : 'busy'} />
           <div>

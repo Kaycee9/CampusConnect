@@ -241,21 +241,19 @@ export const forgotPassword = async (req, res) => {
 
     const resetLink = `${env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: 'Reset your CampusConnect password',
-        html: `
-          <p>Hello,</p>
-          <p>We received a request to reset your password.</p>
-          <p>Use this link to reset it (valid for 1 hour):</p>
-          <p><a href="${resetLink}">${resetLink}</a></p>
-          <p>If you did not request this, you can ignore this email.</p>
-        `,
-      });
-    } catch (mailError) {
+    sendEmail({
+      to: user.email,
+      subject: 'Reset your CampusConnect password',
+      html: `
+        <p>Hello,</p>
+        <p>We received a request to reset your password.</p>
+        <p>Use this link to reset it (valid for 1 hour):</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>If you did not request this, you can ignore this email.</p>
+      `,
+    }).catch((mailError) => {
       console.error('Forgot password email send failed:', mailError);
-    }
+    });
 
     return res.json({ message: 'If an account exists for this email, a reset link has been sent.' });
   } catch (error) {

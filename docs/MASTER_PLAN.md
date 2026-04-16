@@ -910,13 +910,13 @@ Landing -> Multi-step Register -> Dashboard
 - [x] Email notifications on booking events
 - [x] Negotiation support: student/artisan counter-offers + timeline history in booking detail
 
-### Stage 5: Real-Time Messaging (Est. 2–3 days)
-- [ ] Backend: Socket.io server setup + room management
-- [ ] Backend: Message persistence API
-- [ ] Frontend: Conversation list
-- [ ] Frontend: Chat window with real-time updates
-- [ ] Frontend: Unread badge indicators
-- [ ] Frontend: In-app notification badges
+### Stage 5: Real-Time Messaging — COMPLETED (April 13, 2026)
+- [x] Backend: Socket.io server setup + room management
+- [x] Backend: Message persistence API
+- [x] Frontend: Conversation list
+- [x] Frontend: Chat window with real-time updates
+- [x] Frontend: Unread badge indicators
+- [x] Frontend: In-app notification badges
 
 ### Stage 6: Payments (Est. 2–3 days)
 - [ ] Backend: Paystack payment initialization

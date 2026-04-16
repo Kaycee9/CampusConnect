@@ -14,10 +14,10 @@ Current implemented core:
 - Artisan discovery and public profile pages
 - Booking lifecycle with status transitions
 - Price negotiation with history in booking detail
+- Messaging inbox, threads, unread counts, and live updates
 - In-app notifications and booking event emails
 
 Not yet implemented in API (returns 501):
-- Messaging routes
 - Payments routes
 - Reviews routes
 

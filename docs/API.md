@@ -12,10 +12,10 @@ Current shipping capability:
 - Auth and profile management
 - Artisan listing and artisan public profile
 - Booking creation, tracking, state transitions, and price negotiation
+- Messaging conversations, booking-scoped threads, unread counts, live socket updates, and negotiation finalization
 - Notification and email triggers on booking events
 
 Not yet implemented:
-- Messaging API
 - Payments API
 - Reviews API
 
@@ -157,6 +157,40 @@ All booking routes require authentication.
     - agreedPrice (required)
     - note (optional)
 
+## Messaging Endpoints
+
+All messaging routes require authentication.
+
+- GET /messages/conversations
+  - Purpose: List inbox threads for the current user
+
+- POST /messages/conversations
+  - Purpose: Start or fetch a thread
+  - Body:
+    - participantId (optional)
+    - bookingId (optional, preferred when starting from a booking)
+
+- GET /messages/conversations/:id
+  - Purpose: Get thread messages and booking context
+
+- POST /messages/conversations/:id
+  - Purpose: Send a chat message
+  - Body:
+    - content (required)
+
+- PATCH /messages/conversations/:id/read
+  - Purpose: Mark unread messages as read
+
+- PATCH /messages/conversations/:id/finalize
+  - Purpose: Finalize a booking negotiation from inside chat
+  - Body:
+    - agreedPrice (required)
+
+Chat notes:
+- When a thread is created from a booking, the conversation stores that booking context.
+- The booking detail page links directly into the booking-scoped thread.
+- Finalization posts a message and updates the booking status to ACCEPTED.
+
 Booking state model:
 - PENDING -> ACCEPTED -> IN_PROGRESS -> COMPLETED
 - PENDING -> REJECTED
@@ -173,7 +207,6 @@ The booking detail endpoint reconstructs and returns a de-duplicated, latest-fir
 ## Routes Not Yet Implemented
 
 These route groups currently return 501:
-- /messages
 - /payments
 - /reviews
 

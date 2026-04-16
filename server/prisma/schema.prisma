@@ -146,6 +146,7 @@ model Booking {
 
   payment Payment?
   review  Review?
+  conversation Conversation?
 }
 
 model Payment {
@@ -177,6 +178,8 @@ model Review {
 
 model Conversation {
   id        String   @id @default(cuid())
+  bookingId String?   @unique
+  booking   Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   user1Id   String
   user1     User     @relation("User1Conversations", fields: [user1Id], references: [id])
   user2Id   String
@@ -185,8 +188,6 @@ model Conversation {
   updatedAt DateTime @updatedAt
 
   messages Message[]
-
-  @@unique([user1Id, user2Id])
 }
 
 model Message {

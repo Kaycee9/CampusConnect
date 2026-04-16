@@ -305,16 +305,6 @@ export default function Bookings() {
         </div>
       )}
 
-      {Object.keys(grouped).length > 1 && (
-        <div className="booking-groups">
-          {Object.entries(grouped).map(([status, list]) => (
-            <div key={status} className="booking-groups__item">
-              <h3>{statusLabel(status)}</h3>
-              <p>{list.length} booking(s)</p>
-            </div>
-          ))}
-        </div>
-      )}
     </section>
   );
 }
