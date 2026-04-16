@@ -50,7 +50,8 @@ export const updateProfile = async (req, res) => {
 
     const {
       firstName, lastName, phone, address,
-      lat, lng, bio, category, startingPrice, yearsExp
+      lat, lng, bio, category, startingPrice, yearsExp,
+      bankName, accountName, accountNumber
     } = req.body;
 
     let avatarUrl = undefined;
@@ -96,6 +97,9 @@ export const updateProfile = async (req, res) => {
           ...(category && { category }),
           ...(startingPrice && { startingPrice: Number(startingPrice) }),
           ...(yearsExp && { yearsExp: Number(yearsExp) }),
+          ...(bankName !== undefined && { bankName: bankName.trim() || null }),
+          ...(accountName !== undefined && { accountName: accountName.trim() || null }),
+          ...(accountNumber !== undefined && { accountNumber: accountNumber.trim() || null }),
           ...(avatarUrl && { avatarUrl }),
         },
       });

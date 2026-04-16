@@ -10,6 +10,7 @@ import Profile from './pages/dashboard/Profile.jsx';
 import Browse from './pages/dashboard/Browse.jsx';
 import Dashboard from './pages/dashboard/Dashboard.jsx';
 import Earnings from './pages/dashboard/Earnings.jsx';
+import Reviews from './pages/dashboard/Reviews.jsx';
 import ArtisanPublicProfile from './pages/artisan/ArtisanPublicProfile.jsx';
 import Bookings from './pages/bookings/Bookings.jsx';
 import BookingRequest from './pages/bookings/BookingRequest.jsx';
@@ -38,8 +39,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/payments" element={<Earnings />} />
             <Route path="/earnings" element={<Earnings />} />
-            <Route path="/settings" element={<Placeholder title="Settings" />} />
-            <Route path="/reviews" element={<Placeholder title="My Reviews" />} />
+            <Route path="/reviews" element={<Reviews />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
@@ -63,17 +63,6 @@ function NotFound() {
       </h1>
       <p style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)' }}>
         Page not found
-      </p>
-    </div>
-  );
-}
-
-function Placeholder({ title }) {
-  return (
-    <div style={{ padding: 'var(--space-8)' }}>
-      <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 'bold' }}>{title}</h1>
-      <p style={{ color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)' }}>
-        This page is under construction.
       </p>
     </div>
   );

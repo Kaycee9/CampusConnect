@@ -82,6 +82,12 @@
   margin-bottom: var(--space-6);
 }
 
+.profile-note {
+  margin: calc(var(--space-6) * -1) 0 var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
 .profile-grid {
   display: grid;
   grid-template-columns: 1fr;

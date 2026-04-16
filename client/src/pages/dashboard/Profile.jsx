@@ -5,7 +5,7 @@ import { useToast } from '../../components/ui/Toast.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Avatar from '../../components/ui/Avatar.jsx';
-import { Camera, User as UserIcon, MapPin, Navigation, Phone, Briefcase, FileText, DollarSign } from 'lucide-react';
+import { Camera, User as UserIcon, MapPin, Navigation, Phone, Briefcase, FileText, DollarSign, Building2, Landmark, CreditCard } from 'lucide-react';
 import './Profile.css';
 
 const CATEGORIES = [
@@ -31,6 +31,9 @@ export default function Profile() {
     category: profileData?.category || '',
     startingPrice: profileData?.startingPrice || '',
     yearsExp: profileData?.yearsExp || '',
+    bankName: profileData?.bankName || '',
+    accountName: profileData?.accountName || '',
+    accountNumber: profileData?.accountNumber || '',
   });
 
   const [avatarPreview, setAvatarPreview] = useState(profileData?.avatarUrl || null);
@@ -279,6 +282,41 @@ export default function Profile() {
                   value={form.bio}
                   onChange={handleChange}
                   placeholder="Tell students about your expertise, reliability, and past work..."
+                />
+              </div>
+
+              <hr className="profile-divider" />
+              <h3 className="profile-section-title">Payout Details</h3>
+              <p className="profile-note">These details are used by admins to process your withdrawal payouts.</p>
+
+              <div className="profile-grid">
+                <Input
+                  label="Bank Name"
+                  name="bankName"
+                  icon={Building2}
+                  value={form.bankName}
+                  onChange={handleChange}
+                  placeholder="e.g. First Bank"
+                />
+                <Input
+                  label="Account Name"
+                  name="accountName"
+                  icon={Landmark}
+                  value={form.accountName}
+                  onChange={handleChange}
+                  placeholder="Name on account"
+                />
+              </div>
+
+              <div className="mb-4">
+                <Input
+                  label="Account Number"
+                  name="accountNumber"
+                  icon={CreditCard}
+                  value={form.accountNumber}
+                  onChange={handleChange}
+                  placeholder="10-digit NUBAN"
+                  maxLength={10}
                 />
               </div>
             </>

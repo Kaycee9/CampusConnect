@@ -30,6 +30,9 @@ const updateProfileSchema = z.object({
   category: z.enum(['PLUMBING', 'ELECTRICAL', 'PAINTING', 'CARPENTRY', 'CLEANING', 'TAILORING', 'BARBING', 'WELDING', 'MECHANICS', 'TECH_REPAIR', 'OTHER']).optional(),
   startingPrice: z.union([z.string(), z.number()]).optional(),
   yearsExp: z.union([z.string(), z.number()]).optional(),
+  bankName: z.string().max(120, 'Bank name is too long').optional(),
+  accountName: z.string().max(120, 'Account name is too long').optional(),
+  accountNumber: z.string().regex(/^\d{10}$/, 'Account number must be exactly 10 digits').optional(),
 });
 
 /* ── Routes ─────────────────────────────────────────────────────────────── */

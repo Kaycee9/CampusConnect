@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Search, CalendarCheck, MessageSquare,
-  User, Settings, Wallet, Star
+  User, Wallet, Star
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import './Sidebar.css';
@@ -22,7 +22,6 @@ const ARTISAN_LINKS = [
   { to: '/messages', icon: MessageSquare, label: 'Messages' },
   { to: '/payments', icon: Wallet, label: 'Earnings' },
   { to: '/profile', icon: User, label: 'Profile' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function Sidebar() {
