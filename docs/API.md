@@ -1,6 +1,6 @@
 # CampusConnect API
 
-Last updated: April 11, 2026
+Last updated: April 16, 2026
 
 ## Product in One Minute
 
@@ -11,13 +11,12 @@ CampusConnect is a two-sided marketplace:
 Current shipping capability:
 - Auth and profile management
 - Artisan listing and artisan public profile
-- Booking creation, tracking, state transitions, and price negotiation
-- Messaging conversations, booking-scoped threads, unread counts, live socket updates, and negotiation finalization
-- Notification and email triggers on booking events
-
-Not yet implemented:
-- Payments API
-- Reviews API
+- Booking creation, tracking, completion verification, and price negotiation
+- Messaging conversations, booking-scoped threads, unread counts, and live updates
+- Payment simulation lifecycle with event logging (initiate, simulate, retry, refund)
+- Withdrawal request workflow for artisans (completed + paid bookings only)
+- Reviews and ratings for completed, successfully paid bookings
+- Notification and email triggers on major booking lifecycle events
 
 ## Base URL
 
@@ -40,9 +39,6 @@ Refresh endpoint:
 
 Most errors return:
 - { error: string }
-
-Some unimplemented routes return:
-- { message: string }
 
 ## Health
 
@@ -89,6 +85,10 @@ Some unimplemented routes return:
 - PUT /users/profile
   - Auth: Required
   - Purpose: Update profile fields and optional avatar upload
+  - Supports artisan payout fields:
+    - bankName
+    - accountName
+    - accountNumber (10 digits)
 
 ## Artisan Endpoints
 
@@ -142,9 +142,23 @@ All booking routes require authentication.
   - Role: ARTISAN
   - Purpose: Move ACCEPTED to IN_PROGRESS
 
+- PATCH /bookings/:id/request-completion
+  - Role: ARTISAN
+  - Purpose: Request student completion confirmation for an IN_PROGRESS booking
+
+- PATCH /bookings/:id/confirm-completion
+  - Role: STUDENT
+  - Purpose: Confirm completion and move IN_PROGRESS to COMPLETED
+
+- PATCH /bookings/:id/decline-completion
+  - Role: STUDENT
+  - Purpose: Decline completion request and keep booking IN_PROGRESS
+  - Optional body:
+    - reason
+
 - PATCH /bookings/:id/complete
   - Role: ARTISAN
-  - Purpose: Move IN_PROGRESS to COMPLETED
+  - Purpose: Backward-compatible alias for request-completion
 
 - PATCH /bookings/:id/cancel
   - Role: STUDENT
@@ -156,6 +170,16 @@ All booking routes require authentication.
   - Body:
     - agreedPrice (required)
     - note (optional)
+
+Booking state model:
+- PENDING -> ACCEPTED -> IN_PROGRESS -> COMPLETED
+- PENDING -> REJECTED
+- PENDING -> CANCELLED
+
+Completion verification model:
+- Artisan requests completion while booking is IN_PROGRESS
+- Student confirms to move booking to COMPLETED
+- Student can decline with a reason and keep booking IN_PROGRESS
 
 ## Messaging Endpoints
 
@@ -186,29 +210,53 @@ All messaging routes require authentication.
   - Body:
     - agreedPrice (required)
 
-Chat notes:
-- When a thread is created from a booking, the conversation stores that booking context.
-- The booking detail page links directly into the booking-scoped thread.
-- Finalization posts a message and updates the booking status to ACCEPTED.
+## Payment Endpoints
 
-Booking state model:
-- PENDING -> ACCEPTED -> IN_PROGRESS -> COMPLETED
-- PENDING -> REJECTED
-- PENDING -> CANCELLED
+All payment routes require authentication.
 
-## Negotiation History
+- GET /payments/bookings/:bookingId
+  - Purpose: Get payment summary for booking
 
-Negotiation timeline is currently persisted via Notification records:
-- type: BOOKING_NEGOTIATION
-- metadata includes bookingId, offerId, proposedPrice, by, actorName, note
+- POST /payments/bookings/:bookingId/initiate
+  - Role: STUDENT
+  - Purpose: Create or return payment record for an accepted booking
 
-The booking detail endpoint reconstructs and returns a de-duplicated, latest-first negotiation history.
+- POST /payments/:paymentId/simulate
+  - Purpose: Simulate payment outcome
+  - Body:
+    - outcome (success | failed | cancelled)
 
-## Routes Not Yet Implemented
+- POST /payments/:paymentId/retry
+  - Purpose: Retry a failed simulation payment
 
-These route groups currently return 501:
-- /payments
-- /reviews
+- POST /payments/:paymentId/refund
+  - Purpose: Refund a successful payment
+  - Optional body:
+    - reason
+
+- GET /payments/withdrawals/summary
+  - Role: ARTISAN
+  - Purpose: Get withdrawable balance from completed and successfully paid bookings
+
+- POST /payments/withdrawals/request
+  - Role: ARTISAN
+  - Purpose: Create a withdrawal request from currently eligible completed payment items
+  - Optional body:
+    - note
+
+## Review Endpoints
+
+All review routes require authentication.
+
+- GET /reviews/bookings/:bookingId
+  - Purpose: Get booking review if available
+
+- POST /reviews/bookings/:bookingId
+  - Role: STUDENT
+  - Purpose: Submit review for a completed and successfully paid booking
+  - Body:
+    - rating (1-5)
+    - comment (optional)
 
 ## Frontend Routes (Current)
 
@@ -220,4 +268,8 @@ These route groups currently return 501:
 - /bookings
 - /bookings/new
 - /bookings/:id
+- /messages
+- /messages/:id
+- /payments
+- /reviews
 - /profile

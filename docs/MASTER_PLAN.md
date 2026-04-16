@@ -204,7 +204,7 @@ The CampusConnect mark is a stylized interlocking "C·C" within a rounded square
 - `A-08` As an artisan, I want to receive booking requests with all necessary details.
 - `A-09` As an artisan, I want to accept or reject a booking request.
 - `A-10` As an artisan, I want to mark a booking as in-progress when I begin work.
-- `A-11` As an artisan, I want to mark a booking as completed when work is done.
+- `A-11` As an artisan, I want to request completion confirmation when work is done so the student can verify before final completion.
 - `A-12` As an artisan, I want to view my full bookings history and status.
 
 **Communication**
@@ -212,7 +212,7 @@ The CampusConnect mark is a stylized interlocking "C·C" within a rounded square
 - `A-14` As an artisan, I want to receive notifications of new booking requests and messages.
 
 **Payments**
-- `A-15` As an artisan, I want to receive payment for completed services directly through the app.
+- `A-15` As an artisan, I want to request withdrawals for completed paid bookings and provide payout bank details so admins can process payouts.
 - `A-16` As an artisan, I want to view my earnings history and payout status.
 
 ---
@@ -255,7 +255,7 @@ The CampusConnect mark is a stylized interlocking "C·C" within a rounded square
 | ID | Requirement |
 |---|---|
 | FR-BOOK-01 | Bookings shall have states: PENDING -> ACCEPTED -> IN_PROGRESS -> COMPLETED or REJECTED / CANCELLED |
-| FR-BOOK-02 | Only artisans can ACCEPT, REJECT, or mark IN_PROGRESS / COMPLETED |
+| FR-BOOK-02 | Only artisans can ACCEPT, REJECT, and mark IN_PROGRESS; completion must be requested by artisan and confirmed by student |
 | FR-BOOK-03 | Only students can CANCEL a PENDING booking |
 | FR-BOOK-04 | System shall send in-app and email notifications on booking state changes |
 | FR-BOOK-05 | Bookings shall include: service address, scheduled date/time, service description, and agreed price |
@@ -272,16 +272,16 @@ The CampusConnect mark is a stylized interlocking "C·C" within a rounded square
 #### FR-PAY: Payments
 | ID | Requirement |
 |---|---|
-| FR-PAY-01 | System shall integrate Paystack as the primary payment gateway |
+| FR-PAY-01 | System shall support a payment lifecycle with persistent records, statuses, and transition events |
 | FR-PAY-02 | Payments shall be initiated by students on booking confirmation |
-| FR-PAY-03 | System shall verify payment via webhook before marking a booking as paid |
+| FR-PAY-03 | System shall update payment status through controlled transitions (simulate success/failure/cancel, retry, refund) before marking a booking as paid |
 | FR-PAY-04 | Payment records shall be stored with reference, status, amount, and timestamps |
 | FR-PAY-05 | Artisans shall receive earnings minus a platform fee (configurable, default 10%) |
 
 #### FR-REVIEW: Reviews & Ratings
 | ID | Requirement |
 |---|---|
-| FR-REV-01 | Reviews can only be submitted by students for COMPLETED bookings |
+| FR-REV-01 | Reviews can only be submitted by students for COMPLETED bookings that have successful payment |
 | FR-REV-02 | Only one review per booking is allowed |
 | FR-REV-03 | Ratings must be integers from 1–5 |
 | FR-REV-04 | Artisan average rating shall be auto-computed and stored on the artisan profile |
@@ -919,18 +919,20 @@ Landing -> Multi-step Register -> Dashboard
 - [x] Frontend: In-app notification badges
 
 ### Stage 6: Payments (Est. 2–3 days)
-- [ ] Backend: Paystack payment initialization
-- [ ] Backend: Paystack webhook handler
-- [ ] Backend: Earnings calculation (platform fee deduction)
-- [ ] Frontend: Payment initiation after booking acceptance
-- [ ] Frontend: Payment confirmation UI
-- [ ] Frontend: Artisan earnings dashboard
+- [x] Backend: Payment record initiation for accepted bookings
+- [x] Backend: Payment simulation outcomes, retry, and refund
+- [x] Backend: Earnings calculation (platform fee deduction)
+- [x] Frontend: Payment initiation after booking acceptance
+- [x] Frontend: Payment simulation and confirmation UI
+- [x] Frontend: Artisan earnings dashboard
+- [x] Backend + frontend: Withdrawal summary and request flow for artisans
 
 ### Stage 7: Reviews & Ratings (Est. 1–2 days)
-- [ ] Backend: Review CRUD + artisan rating aggregation
-- [ ] Frontend: Post-completion review form
-- [ ] Frontend: Reviews display on artisan profile
-- [ ] Frontend: My Reviews page (student)
+- [x] Backend: Review creation + artisan rating aggregation
+- [x] Frontend: Post-completion review form in booking detail
+- [x] Frontend: Reviews display on artisan profile
+- [x] Frontend: My Reviews page (student) with direct star input for pending reviews
+- [x] Backend + frontend: Student completion verification workflow before final completion
 
 ### Stage 8: Polish, Testing & Deployment (Est. 3–5 days)
 - [ ] Write unit tests (critical business logic)

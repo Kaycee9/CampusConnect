@@ -1,5 +1,5 @@
 # CampusConnect — AI Continuation Handoff
-> **Last Updated:** April 11, 2026 (Stage 4 update)  
+> **Last Updated:** April 16, 2026 (Stage 7 update)  
 > **Purpose:** Enable any AI system to seamlessly continue development from the current state.
 
 ---
@@ -71,6 +71,20 @@
 - **Frontend:** unread counts are surfaced in the inbox list
 - **Frontend:** booking detail now links directly into a participant conversation
 
+### Stage 6: Payments & Withdrawals ✅
+- **Backend:** `payment.controller.js` + `payment.routes.js` support payment initiation, simulation outcome processing, retry, and refund
+- **Backend:** payment events are persisted for transaction timeline visibility
+- **Backend:** artisan withdrawal summary and withdrawal request endpoints are implemented
+- **Frontend:** `/payments` provides student payment activity and artisan earnings ledger
+- **Frontend:** artisan payment view includes withdrawable balance and withdrawal request actions
+
+### Stage 7: Reviews & Completion Verification ✅
+- **Backend:** booking completion now uses request/confirm/decline flow with student confirmation
+- **Backend:** review endpoints implemented (`GET/POST /reviews/bookings/:bookingId`) with one-review-per-booking rule
+- **Frontend:** booking detail supports student completion confirmation and review submission
+- **Frontend:** dedicated `/reviews` page now shows submitted and pending reviews with direct star input
+- **Frontend:** artisan profile now includes payout bank detail fields for admin payout processing
+
 ---
 
 ## 3. Current State — What Works Right Now
@@ -81,12 +95,14 @@
 | Registration (Student + Artisan) | ✅ Working | `http://localhost:5173/register` |
 | Login | ✅ Working | `http://localhost:5173/login` |
 | Forgot password | ✅ Working | `http://localhost:5173/forgot-password` |
-| Dashboard (placeholder) | ✅ Working | `http://localhost:5173/dashboard` |
+| Dashboard (role-aware) | ✅ Working | `http://localhost:5173/dashboard` |
 | Browse artisans | ✅ Working | `http://localhost:5173/browse` |
 | Artisan public profile | ✅ Working | `http://localhost:5173/artisan/:id` |
 | Booking request form | ✅ Working | `http://localhost:5173/bookings/new?artisanId=:id` |
 | Bookings dashboard | ✅ Working | `http://localhost:5173/bookings` |
 | Booking detail + negotiation history | ✅ Working | `http://localhost:5173/bookings/:id` |
+| Payments and earnings | ✅ Working | `http://localhost:5173/payments` |
+| Reviews center | ✅ Working | `http://localhost:5173/reviews` |
 | Profile edit + avatar upload | ✅ Working | `http://localhost:5173/profile` |
 | API health check | ✅ Working | `http://localhost:5000/api/v1/health` |
 
@@ -278,8 +294,8 @@ CampusConnect/
 │   │       ├── artisan.routes.js            # GET list/profile (Stage 3 complete)
 │   │       ├── booking.routes.js            # Booking lifecycle + negotiation endpoints
 │   │       ├── message.routes.js            # Conversation, chat, read-state, finalize endpoints
-│   │       ├── payment.routes.js            # STUB — Stage 6
-│   │       └── review.routes.js             # STUB — Stage 7
+│   │       ├── payment.routes.js            # Payment simulation + withdrawals
+│   │       └── review.routes.js             # Booking-linked reviews
 │   ├── prisma/
 │   │   └── schema.prisma                    # 10 models, 4 enums
 │   └── package.json
@@ -299,8 +315,8 @@ CampusConnect/
 | **3** | **Discovery & Artisan Listings** | Artisan API, Browse grid, Search/Filter, Public profile | Completed |
 | **4** | **Booking System** | Booking CRUD/state machine, notification + email triggers, role-aware dashboards, detail + negotiation history | Completed |
 | **5** | **Real-Time Messaging** | Socket.io chat, conversation list, unread badges | Completed |
-| 6 | Payments | Paystack integration, webhook, earnings dashboard | 2–3 days |
-| 7 | Reviews & Ratings | Post-completion reviews, artisan rating aggregation | 1–2 days |
+| 6 | Payments | Simulation lifecycle, refunds, earnings, withdrawals | Completed |
+| 7 | Reviews & Ratings | Post-completion reviews, My Reviews page, rating aggregation | Completed |
 | 8 | Polish & Deployment | Testing, a11y, performance, Vercel/Railway deploy | 3–5 days |
 
 ---

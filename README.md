@@ -13,13 +13,14 @@ Current implemented core:
 - Authentication and profile management
 - Artisan discovery and public profile pages
 - Booking lifecycle with status transitions
+- Completion verification flow (artisan requests, student confirms or declines)
 - Price negotiation with history in booking detail
 - Messaging inbox, threads, unread counts, and live updates
+- Payment simulation lifecycle with transaction events (initiate, simulate, retry, refund)
+- Student payments view and artisan earnings/withdrawal requests
+- Post-completion reviews and ratings (booking-linked, one review per booking)
+- Artisan payout bank details in profile
 - In-app notifications and booking event emails
-
-Not yet implemented in API (returns 501):
-- Payments routes
-- Reviews routes
 
 ## Tech Stack
 
