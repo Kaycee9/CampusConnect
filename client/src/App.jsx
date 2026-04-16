@@ -8,6 +8,7 @@ import Register from './pages/auth/Register.jsx';
 import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 import Profile from './pages/dashboard/Profile.jsx';
 import Browse from './pages/dashboard/Browse.jsx';
+import Dashboard from './pages/dashboard/Dashboard.jsx';
 import ArtisanPublicProfile from './pages/artisan/ArtisanPublicProfile.jsx';
 import Bookings from './pages/bookings/Bookings.jsx';
 import BookingRequest from './pages/bookings/BookingRequest.jsx';
@@ -28,7 +29,7 @@ function App() {
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Placeholder title="Dashboard" />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/bookings/:id" element={<BookingDetail />} />
             <Route path="/messages" element={<Messages />} />

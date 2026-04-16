@@ -285,6 +285,12 @@ const runStatusTransition = async (req, res, action) => {
       return res.status(400).json({ error: `Cannot ${action} a ${booking.status.toLowerCase()} booking` });
     }
 
+    if (action === 'start') {
+      if (!booking.payment || booking.payment.status !== 'SUCCESS') {
+        return res.status(400).json({ error: 'Booking cannot start until payment is completed successfully' });
+      }
+    }
+
     if (req.user.role !== config.actor) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }

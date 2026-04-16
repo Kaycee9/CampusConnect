@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CalendarCheck, MapPin, MessageSquare } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, CreditCard, MapPin, MessageSquare, RotateCcw, XCircle } from 'lucide-react';
 import api from '../../lib/api.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../components/ui/Toast.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Badge from '../../components/ui/Badge.jsx';
 import Avatar from '../../components/ui/Avatar.jsx';
+import Modal from '../../components/ui/Modal.jsx';
 import './Bookings.css';
 
 const formatBookingTitle = (title = '') => {
@@ -29,14 +30,21 @@ export default function BookingDetail() {
   const [negotiationHistory, setNegotiationHistory] = useState([]);
   const [counterPrice, setCounterPrice] = useState('');
   const [counterNote, setCounterNote] = useState('');
+  const [payment, setPayment] = useState(null);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/bookings/${id}`);
-      setBooking(data.booking);
-      setNegotiationHistory(data.negotiationHistory || []);
-      setCounterPrice(data.booking?.agreedPrice ?? '');
+      const [bookingRes, paymentRes] = await Promise.all([
+        api.get(`/bookings/${id}`),
+        api.get(`/payments/bookings/${id}`),
+      ]);
+      setBooking(bookingRes.data.booking);
+      setNegotiationHistory(bookingRes.data.negotiationHistory || []);
+      setCounterPrice(bookingRes.data.booking?.agreedPrice ?? '');
+      setPayment(paymentRes.data.payment || null);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Unable to load this booking right now.');
       navigate('/bookings');
@@ -108,6 +116,79 @@ export default function BookingDetail() {
       setBusy(false);
     }
   };
+
+  const initiatePayment = async () => {
+    setPaymentBusy(true);
+    try {
+      const { data } = await api.post(`/payments/bookings/${id}/initiate`);
+      setPayment(data.payment);
+      setPaymentModalOpen(true);
+      toast.success('Simulation payment session started.');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to initiate payment.');
+    } finally {
+      setPaymentBusy(false);
+    }
+  };
+
+  const simulateOutcome = async (outcome) => {
+    if (!payment?.id) return;
+
+    setPaymentBusy(true);
+    try {
+      const { data } = await api.post(`/payments/${payment.id}/simulate`, { outcome });
+      setPayment(data.payment);
+      setPaymentModalOpen(false);
+      const textMap = {
+        success: 'Payment simulated successfully.',
+        failed: 'Payment simulated as failed.',
+        cancelled: 'Payment simulation cancelled.',
+      };
+      toast.success(textMap[outcome] || 'Simulation complete.');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to simulate payment outcome.');
+    } finally {
+      setPaymentBusy(false);
+    }
+  };
+
+  const retryPayment = async () => {
+    if (!payment?.id) return;
+    setPaymentBusy(true);
+    try {
+      const { data } = await api.post(`/payments/${payment.id}/retry`);
+      setPayment(data.payment);
+      setPaymentModalOpen(true);
+      toast.success('Simulation reset. Choose an outcome.');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to retry payment simulation.');
+    } finally {
+      setPaymentBusy(false);
+    }
+  };
+
+  const refundPayment = async () => {
+    if (!payment?.id) return;
+    setPaymentBusy(true);
+    try {
+      const { data } = await api.post(`/payments/${payment.id}/refund`, {
+        reason: 'User requested simulation refund',
+      });
+      setPayment(data.payment);
+      toast.success('Simulation refund completed.');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to refund payment.');
+    } finally {
+      setPaymentBusy(false);
+    }
+  };
+
+  const formatMoney = (value) => `NGN ${Number(value || 0).toLocaleString()}`;
+  const canStartJob = payment?.status === 'SUCCESS';
+  const canStudentPay = isStudent && booking.status === 'ACCEPTED';
+  const canStudentRefund = isStudent && payment?.status === 'SUCCESS';
 
   if (loading) {
     return <div style={{ padding: 'var(--space-8)' }}>Loading booking...</div>;
@@ -200,7 +281,7 @@ export default function BookingDetail() {
               </>
             )}
             {isArtisan && booking.status === 'ACCEPTED' && (
-              <Button loading={busy} onClick={() => action('start')}>
+              <Button loading={busy} onClick={() => action('start')} disabled={!canStartJob}>
                 Mark in progress
               </Button>
             )}
@@ -217,6 +298,87 @@ export default function BookingDetail() {
               Open chat
             </Button>
           </div>
+        </div>
+
+        <div className="booking-payment card">
+          <div className="booking-payment__head">
+            <h3>Payment</h3>
+            <Badge status={payment?.status || 'PENDING'}>
+              {(payment?.status || 'PENDING').replace('_', ' ')}
+            </Badge>
+          </div>
+
+          <p className="booking-payment__text">
+            {payment?.status === 'SUCCESS'
+              ? 'Payment confirmed. Job can be started.'
+              : 'Simulation mode: no real card is needed. Use one-click outcomes to test flows.'}
+          </p>
+
+          <div className="booking-payment__summary">
+            <div>
+              <small>Total amount</small>
+              <strong>{formatMoney(payment?.amount ?? booking.agreedPrice)}</strong>
+            </div>
+            <div>
+              <small>Platform fee</small>
+              <strong>{formatMoney(payment?.platformFee ?? Number(booking.agreedPrice || 0) * 0.1)}</strong>
+            </div>
+            <div>
+              <small>Artisan payout</small>
+              <strong>{formatMoney(payment?.artisanAmount ?? Number(booking.agreedPrice || 0) * 0.9)}</strong>
+            </div>
+          </div>
+
+          {payment?.reference && (
+            <p className="booking-payment__ref">Reference: {payment.reference}</p>
+          )}
+
+          <div className="booking-payment__actions">
+            {canStudentPay && !payment && (
+              <Button loading={paymentBusy} onClick={initiatePayment} icon={CreditCard}>
+                Pay now (simulate)
+              </Button>
+            )}
+
+            {canStudentPay && payment?.status === 'PENDING' && (
+              <Button loading={paymentBusy} onClick={() => setPaymentModalOpen(true)} icon={CreditCard}>
+                Continue simulation
+              </Button>
+            )}
+
+            {canStudentPay && payment?.status === 'FAILED' && (
+              <Button loading={paymentBusy} onClick={retryPayment} icon={RotateCcw}>
+                Retry payment
+              </Button>
+            )}
+
+            {canStudentRefund && (
+              <Button variant="ghost" loading={paymentBusy} onClick={refundPayment}>
+                Refund (simulate)
+              </Button>
+            )}
+
+            {isArtisan && booking.status === 'ACCEPTED' && !canStartJob && (
+              <p className="booking-payment__hint">Waiting for student payment before starting this job.</p>
+            )}
+          </div>
+
+          {payment?.events?.length > 0 && (
+            <div className="booking-payment__timeline">
+              <h4>Transaction timeline</h4>
+              <ul>
+                {payment.events.slice(0, 6).map((event) => (
+                  <li key={event.id}>
+                    <div>
+                      <strong>{event.action.replaceAll('_', ' ')}</strong>
+                      <p>{event.note || 'Payment event recorded'}</p>
+                    </div>
+                    <span>{new Date(event.createdAt).toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {['PENDING', 'ACCEPTED'].includes(booking.status) && (
@@ -274,6 +436,42 @@ export default function BookingDetail() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={paymentModalOpen}
+        onClose={() => !paymentBusy && setPaymentModalOpen(false)}
+        title="Simulate payment"
+        size="md"
+      >
+        <div className="payment-sim">
+          <div className="payment-sim__card">
+            <small>Mock Card (Auto-provided)</small>
+            <strong>4242 4242 4242 4242</strong>
+            <p>Exp 12/34 · CVV 123 · Name CampusConnect Test</p>
+          </div>
+
+          <div className="payment-sim__amount">
+            <small>Charge amount</small>
+            <strong>{formatMoney(payment?.amount ?? booking?.agreedPrice)}</strong>
+          </div>
+
+          <p className="payment-sim__caption">
+            Pick any outcome below. This is a sandbox simulation and stores the transaction record in your database.
+          </p>
+
+          <div className="payment-sim__actions">
+            <Button loading={paymentBusy} onClick={() => simulateOutcome('success')} icon={CheckCircle2}>
+              Simulate success
+            </Button>
+            <Button variant="ghost" loading={paymentBusy} onClick={() => simulateOutcome('failed')} icon={XCircle}>
+              Simulate failure
+            </Button>
+            <Button variant="ghost" loading={paymentBusy} onClick={() => simulateOutcome('cancelled')}>
+              Cancel simulation
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

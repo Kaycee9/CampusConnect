@@ -34,7 +34,7 @@ export default function Profile() {
   });
 
   const [avatarPreview, setAvatarPreview] = useState(profileData?.avatarUrl || null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
 
@@ -42,15 +42,40 @@ export default function Profile() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleImageChange = (e) => {
+  const uploadAvatar = async (file) => {
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      await api.put('/users/profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      toast.success('Profile picture updated');
+    } catch (error) {
+      const msg = error.response?.data?.error || 'Failed to upload profile image';
+      setAvatarPreview(profileData?.avatarUrl || null);
+      toast.error(msg);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('Image must be less than 2MB');
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be less than 5MB');
+        e.target.value = '';
         return;
       }
-      setSelectedFile(file);
+
       setAvatarPreview(URL.createObjectURL(file));
+      await uploadAvatar(file);
+      e.target.value = '';
     }
   };
 
@@ -90,9 +115,6 @@ export default function Profile() {
           formData.append(key, value);
         }
       });
-      if (selectedFile) {
-        formData.append('avatar', selectedFile);
-      }
 
       await api.put('/users/profile', formData, {
         headers: {
@@ -139,7 +161,8 @@ export default function Profile() {
             </div>
             <div className="profile-avatar-info">
               <h3>Profile Photo</h3>
-              <p>Click the image to upload a new photo. Max size 2MB (JPEG, PNG).</p>
+              <p>Click the image to upload a new photo. Max size 5MB (JPEG, PNG, WEBP).</p>
+              {avatarUploading && <p>Uploading photo...</p>}
               <input 
                 type="file" 
                 ref={fileInputRef} 

@@ -7,6 +7,9 @@ const statusMap = {
   COMPLETED: 'success',
   REJECTED: 'error',
   CANCELLED: 'neutral',
+  SUCCESS: 'success',
+  FAILED: 'error',
+  REFUNDED: 'neutral',
   available: 'success',
   busy: 'error',
 };

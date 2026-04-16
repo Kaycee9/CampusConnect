@@ -161,6 +161,23 @@ model Payment {
   status        PaymentStatus @default(PENDING)
   paidAt        DateTime?
   createdAt     DateTime      @default(now())
+
+  events PaymentEvent[]
+}
+
+model PaymentEvent {
+  id         String        @id @default(cuid())
+  paymentId  String
+  payment    Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  actorId    String?
+  action     String
+  fromStatus PaymentStatus?
+  toStatus   PaymentStatus?
+  note       String?
+  metadata   Json?
+  createdAt  DateTime      @default(now())
+
+  @@index([paymentId, createdAt])
 }
 
 model Review {

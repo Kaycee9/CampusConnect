@@ -14,6 +14,35 @@ const uploadStream = (buffer, options) => {
   });
 };
 
+const isCloudinaryTimeout = (error) => {
+  return error?.name === 'TimeoutError' || error?.http_code === 499;
+};
+
+const uploadAvatarWithFallback = async (buffer) => {
+  const baseOptions = {
+    folder: 'campus-connect/avatars',
+    resource_type: 'image',
+    timeout: 120000,
+  };
+
+  try {
+    return await uploadStream(buffer, {
+      ...baseOptions,
+      transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'face' }],
+    });
+  } catch (error) {
+    if (!isCloudinaryTimeout(error)) {
+      throw error;
+    }
+
+    // Fallback avoids face detection processing when Cloudinary is slow.
+    return uploadStream(buffer, {
+      ...baseOptions,
+      transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'auto' }],
+    });
+  }
+};
+
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -29,10 +58,7 @@ export const updateProfile = async (req, res) => {
     // Handle Image Upload if file is present
     if (req.file) {
       try {
-        const result = await uploadStream(req.file.buffer, {
-          folder: 'campus-connect/avatars',
-          transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'face' }],
-        });
+        const result = await uploadAvatarWithFallback(req.file.buffer);
         avatarUrl = result.secure_url;
       } catch (uploadError) {
         console.error('Cloudinary upload failure:', uploadError);
