@@ -9,6 +9,7 @@ import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 import Profile from './pages/dashboard/Profile.jsx';
 import Browse from './pages/dashboard/Browse.jsx';
 import Dashboard from './pages/dashboard/Dashboard.jsx';
+import Earnings from './pages/dashboard/Earnings.jsx';
 import ArtisanPublicProfile from './pages/artisan/ArtisanPublicProfile.jsx';
 import Bookings from './pages/bookings/Bookings.jsx';
 import BookingRequest from './pages/bookings/BookingRequest.jsx';
@@ -35,7 +36,8 @@ function App() {
             <Route path="/messages" element={<Messages />} />
             <Route path="/messages/:id" element={<Messages />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/earnings" element={<Placeholder title="Earnings" />} />
+            <Route path="/payments" element={<Earnings />} />
+            <Route path="/earnings" element={<Earnings />} />
             <Route path="/settings" element={<Placeholder title="Settings" />} />
             <Route path="/reviews" element={<Placeholder title="My Reviews" />} />
           </Route>

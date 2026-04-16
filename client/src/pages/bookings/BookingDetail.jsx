@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CalendarCheck, CheckCircle2, CreditCard, MapPin, MessageSquare, RotateCcw, XCircle } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, CreditCard, MapPin, MessageSquare, XCircle } from 'lucide-react';
 import api from '../../lib/api.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../components/ui/Toast.jsx';
@@ -185,10 +185,31 @@ export default function BookingDetail() {
     }
   };
 
+  const isStudent = user?.role === 'STUDENT';
+  const isArtisan = user?.role === 'ARTISAN';
   const formatMoney = (value) => `NGN ${Number(value || 0).toLocaleString()}`;
+  const paymentUnlocked = ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'].includes(booking?.status || '');
+  const paymentStatus = paymentUnlocked ? (payment?.status || 'PENDING') : 'UNAVAILABLE';
   const canStartJob = payment?.status === 'SUCCESS';
-  const canStudentPay = isStudent && booking.status === 'ACCEPTED';
+  const canStudentPay = isStudent && booking?.status === 'ACCEPTED';
   const canStudentRefund = isStudent && payment?.status === 'SUCCESS';
+  const canShowPrimaryPay = canStudentPay && (!payment || payment.status === 'PENDING' || payment.status === 'FAILED');
+
+  const handlePrimaryPay = async () => {
+    if (!payment) {
+      await initiatePayment();
+      return;
+    }
+
+    if (payment.status === 'PENDING') {
+      setPaymentModalOpen(true);
+      return;
+    }
+
+    if (payment.status === 'FAILED') {
+      await retryPayment();
+    }
+  };
 
   if (loading) {
     return <div style={{ padding: 'var(--space-8)' }}>Loading booking...</div>;
@@ -198,8 +219,6 @@ export default function BookingDetail() {
     return <div style={{ padding: 'var(--space-8)' }}>Booking not found.</div>;
   }
 
-  const isStudent = user?.role === 'STUDENT';
-  const isArtisan = user?.role === 'ARTISAN';
   const displayTitle = formatBookingTitle(booking.title);
   const chatParticipantId = isStudent ? booking.artisan?.user?.id : booking.student?.id;
 
@@ -302,54 +321,79 @@ export default function BookingDetail() {
 
         <div className="booking-payment card">
           <div className="booking-payment__head">
-            <h3>Payment</h3>
-            <Badge status={payment?.status || 'PENDING'}>
-              {(payment?.status || 'PENDING').replace('_', ' ')}
-            </Badge>
+            <div>
+              <h3>Payment</h3>
+              <p className="booking-payment__text">
+                {!paymentUnlocked
+                  ? 'Payment unlocks only after the artisan accepts this booking.'
+                  : payment?.status === 'SUCCESS'
+                    ? 'Payment confirmed. Job can be started.'
+                    : 'No real card details required. One click is enough.'}
+              </p>
+            </div>
+            <div className="booking-payment__head-right">
+              {paymentStatus === 'UNAVAILABLE' ? (
+                <Badge variant="neutral">Unavailable</Badge>
+              ) : (
+                <Badge status={paymentStatus}>
+                  {paymentStatus.replace('_', ' ')}
+                </Badge>
+              )}
+              {canShowPrimaryPay && (
+                <Button loading={paymentBusy} onClick={handlePrimaryPay} icon={CreditCard}>
+                  {payment?.status === 'FAILED' ? 'Retry payment' : 'Pay now'}
+                </Button>
+              )}
+              {isStudent && !paymentUnlocked && (
+                <Button variant="ghost" disabled>
+                  Awaiting acceptance
+                </Button>
+              )}
+            </div>
           </div>
 
-          <p className="booking-payment__text">
-            {payment?.status === 'SUCCESS'
-              ? 'Payment confirmed. Job can be started.'
-              : 'Simulation mode: no real card is needed. Use one-click outcomes to test flows.'}
-          </p>
-
-          <div className="booking-payment__summary">
-            <div>
-              <small>Total amount</small>
-              <strong>{formatMoney(payment?.amount ?? booking.agreedPrice)}</strong>
+          {paymentUnlocked && (
+            <div className="booking-payment__summary">
+              <div>
+                <small>Total payable</small>
+                <strong>{formatMoney(payment?.amount ?? booking.agreedPrice)}</strong>
+                {payment?.paidAt && <p>Paid on {new Date(payment.paidAt).toLocaleString()}</p>}
+              </div>
+              <div>
+                <small>Net to artisan</small>
+                <strong>{formatMoney(payment?.artisanAmount ?? Number(booking.agreedPrice || 0) * 0.9)}</strong>
+                <p>Platform fee {formatMoney(payment?.platformFee ?? Number(booking.agreedPrice || 0) * 0.1)}</p>
+              </div>
             </div>
-            <div>
-              <small>Platform fee</small>
-              <strong>{formatMoney(payment?.platformFee ?? Number(booking.agreedPrice || 0) * 0.1)}</strong>
-            </div>
-            <div>
-              <small>Artisan payout</small>
-              <strong>{formatMoney(payment?.artisanAmount ?? Number(booking.agreedPrice || 0) * 0.9)}</strong>
-            </div>
-          </div>
+          )}
 
           {payment?.reference && (
             <p className="booking-payment__ref">Reference: {payment.reference}</p>
           )}
 
+          {isStudent && (
+            <div className="booking-payment__cta">
+              {booking.status === 'ACCEPTED' && canShowPrimaryPay && (
+                <Button fullWidth loading={paymentBusy} onClick={handlePrimaryPay} icon={CreditCard}>
+                  {payment?.status === 'FAILED' ? 'Retry payment now' : 'Pay now'}
+                </Button>
+              )}
+              {!paymentUnlocked && (
+                <Button fullWidth variant="ghost" disabled>
+                  Pay now (available after artisan accepts)
+                </Button>
+              )}
+              {booking.status === 'ACCEPTED' && payment?.status === 'SUCCESS' && (
+                <Button fullWidth variant="ghost" disabled>
+                  Payment completed successfully
+                </Button>
+              )}
+            </div>
+          )}
+
           <div className="booking-payment__actions">
-            {canStudentPay && !payment && (
-              <Button loading={paymentBusy} onClick={initiatePayment} icon={CreditCard}>
-                Pay now (simulate)
-              </Button>
-            )}
-
-            {canStudentPay && payment?.status === 'PENDING' && (
-              <Button loading={paymentBusy} onClick={() => setPaymentModalOpen(true)} icon={CreditCard}>
-                Continue simulation
-              </Button>
-            )}
-
-            {canStudentPay && payment?.status === 'FAILED' && (
-              <Button loading={paymentBusy} onClick={retryPayment} icon={RotateCcw}>
-                Retry payment
-              </Button>
+            {isStudent && booking.status === 'PENDING' && (
+              <p className="booking-payment__hint">Payment unlocks once the artisan accepts this booking.</p>
             )}
 
             {canStudentRefund && (

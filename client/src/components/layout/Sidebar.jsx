@@ -10,6 +10,7 @@ const STUDENT_LINKS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/browse', icon: Search, label: 'Browse Artisans' },
   { to: '/bookings', icon: CalendarCheck, label: 'My Bookings' },
+  { to: '/payments', icon: Wallet, label: 'Payments' },
   { to: '/messages', icon: MessageSquare, label: 'Messages' },
   { to: '/reviews', icon: Star, label: 'My Reviews' },
   { to: '/profile', icon: User, label: 'Profile' },
@@ -19,7 +20,7 @@ const ARTISAN_LINKS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/bookings', icon: CalendarCheck, label: 'Bookings' },
   { to: '/messages', icon: MessageSquare, label: 'Messages' },
-  { to: '/earnings', icon: Wallet, label: 'Earnings' },
+  { to: '/payments', icon: Wallet, label: 'Earnings' },
   { to: '/profile', icon: User, label: 'Profile' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];

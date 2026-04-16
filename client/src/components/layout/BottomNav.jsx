@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Search, CalendarCheck, MessageSquare, User } from 'lucide-react';
+import { LayoutDashboard, Search, CalendarCheck, CreditCard, User } from 'lucide-react';
 import './BottomNav.css';
 
 const LINKS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
   { to: '/browse', icon: Search, label: 'Browse' },
   { to: '/bookings', icon: CalendarCheck, label: 'Bookings' },
-  { to: '/messages', icon: MessageSquare, label: 'Messages' },
+  { to: '/payments', icon: CreditCard, label: 'Payments' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 
