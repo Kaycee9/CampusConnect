@@ -710,11 +710,20 @@
   font-size: var(--text-xs);
 }
 
-.booking-payment__cta {
-  border: 1px dashed var(--color-neutral-300);
-  border-radius: var(--radius-md);
-  padding: var(--space-2);
-  background: var(--color-neutral-50);
+.booking-payment__meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-neutral-200);
+  padding-top: var(--space-2);
+}
+
+.booking-payment__last-event {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
 }
 
 .booking-payment__actions {
@@ -739,10 +748,36 @@
   gap: var(--space-2);
 }
 
-.booking-payment__timeline h4 {
+.booking-payment__timeline summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.booking-payment__timeline summary::-webkit-details-marker {
+  display: none;
+}
+
+.booking-payment__timeline summary span {
   margin: 0;
   font-size: var(--text-base);
   font-family: var(--font-heading);
+}
+
+.booking-payment__timeline summary small {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.booking-payment__timeline:not([open]) ul {
+  display: none;
+}
+
+.booking-payment__timeline[open] {
+  gap: var(--space-2);
 }
 
 .booking-payment__timeline ul {

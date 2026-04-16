@@ -259,6 +259,8 @@ export default function BookingDetail() {
   const canStudentPay = isStudent && booking?.status === 'ACCEPTED';
   const canStudentRefund = isStudent && payment?.status === 'SUCCESS';
   const canShowPrimaryPay = canStudentPay && (!payment || payment.status === 'PENDING' || payment.status === 'FAILED');
+  const hasPaymentTimeline = Boolean(payment?.events?.length);
+  const latestPaymentEvent = hasPaymentTimeline ? payment.events[0] : null;
   const completionPending = Boolean(booking?.completionRequestedAt);
   const canStudentConfirmCompletion = isStudent && booking?.status === 'IN_PROGRESS' && completionPending;
   const canStudentReview = isStudent && booking?.status === 'COMPLETED' && !booking?.review;
@@ -452,25 +454,12 @@ export default function BookingDetail() {
           )}
 
           {payment?.reference && (
-            <p className="booking-payment__ref">Reference: {payment.reference}</p>
-          )}
-
-          {isStudent && (
-            <div className="booking-payment__cta">
-              {booking.status === 'ACCEPTED' && canShowPrimaryPay && (
-                <Button fullWidth loading={paymentBusy} onClick={handlePrimaryPay} icon={CreditCard}>
-                  {payment?.status === 'FAILED' ? 'Retry payment now' : 'Pay now'}
-                </Button>
-              )}
-              {!paymentUnlocked && (
-                <Button fullWidth variant="ghost" disabled>
-                  Pay now (available after artisan accepts)
-                </Button>
-              )}
-              {booking.status === 'ACCEPTED' && payment?.status === 'SUCCESS' && (
-                <Button fullWidth variant="ghost" disabled>
-                  Payment completed successfully
-                </Button>
+            <div className="booking-payment__meta-row">
+              <p className="booking-payment__ref">Reference: {payment.reference}</p>
+              {latestPaymentEvent && (
+                <p className="booking-payment__last-event">
+                  Last update: {latestPaymentEvent.action.replaceAll('_', ' ')} · {new Date(latestPaymentEvent.createdAt).toLocaleString()}
+                </p>
               )}
             </div>
           )}
@@ -492,8 +481,11 @@ export default function BookingDetail() {
           </div>
 
           {payment?.events?.length > 0 && (
-            <div className="booking-payment__timeline">
-              <h4>Transaction timeline</h4>
+            <details className="booking-payment__timeline">
+              <summary>
+                <span>Transaction timeline</span>
+                <small>{payment.events.length} event{payment.events.length > 1 ? 's' : ''}</small>
+              </summary>
               <ul>
                 {payment.events.slice(0, 6).map((event) => (
                   <li key={event.id}>
@@ -505,7 +497,7 @@ export default function BookingDetail() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
         </div>
 
