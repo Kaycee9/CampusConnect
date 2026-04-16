@@ -48,6 +48,13 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
 // ─── MODELS ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -124,6 +131,7 @@ model ArtisanProfile {
 
   bookings Booking[] @relation("ArtisanBookings")
   reviews  Review[]
+  withdrawalRequests WithdrawalRequest[]
 }
 
 model Booking {
@@ -141,6 +149,9 @@ model Booking {
   agreedPrice     Float?
   status          BookingStatus  @default(PENDING)
   rejectionReason String?
+  completionRequestedAt DateTime?
+  completionConfirmedAt DateTime?
+  completionDeclinedReason String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -163,6 +174,7 @@ model Payment {
   createdAt     DateTime      @default(now())
 
   events PaymentEvent[]
+  withdrawalItem WithdrawalItem?
 }
 
 model PaymentEvent {
@@ -178,6 +190,33 @@ model PaymentEvent {
   createdAt  DateTime      @default(now())
 
   @@index([paymentId, createdAt])
+}
+
+model WithdrawalRequest {
+  id          String           @id @default(cuid())
+  artisanId   String
+  artisan     ArtisanProfile   @relation(fields: [artisanId], references: [id])
+  amount      Float
+  status      WithdrawalStatus @default(PENDING)
+  note        String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  items WithdrawalItem[]
+
+  @@index([artisanId, createdAt])
+}
+
+model WithdrawalItem {
+  id          String            @id @default(cuid())
+  requestId   String
+  request     WithdrawalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  paymentId   String            @unique
+  payment     Payment           @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount      Float
+  createdAt   DateTime          @default(now())
+
+  @@index([requestId])
 }
 
 model Review {

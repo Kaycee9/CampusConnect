@@ -5,7 +5,6 @@ const statusTransitions = {
   accept: { from: ['PENDING'], to: 'ACCEPTED', actor: 'ARTISAN' },
   reject: { from: ['PENDING'], to: 'REJECTED', actor: 'ARTISAN' },
   start: { from: ['ACCEPTED'], to: 'IN_PROGRESS', actor: 'ARTISAN' },
-  complete: { from: ['IN_PROGRESS'], to: 'COMPLETED', actor: 'ARTISAN' },
   cancel: { from: ['PENDING'], to: 'CANCELLED', actor: 'STUDENT' },
 };
 
@@ -36,6 +35,9 @@ const serializeBooking = (booking) => ({
   agreedPrice: booking.agreedPrice,
   status: booking.status,
   rejectionReason: booking.rejectionReason,
+  completionRequestedAt: booking.completionRequestedAt || null,
+  completionConfirmedAt: booking.completionConfirmedAt || null,
+  completionDeclinedReason: booking.completionDeclinedReason || null,
   createdAt: booking.createdAt,
   updatedAt: booking.updatedAt,
   student: booking.student
@@ -304,9 +306,19 @@ const runStatusTransition = async (req, res, action) => {
     const updateData = { status: config.to };
     if (action === 'accept' && req.body.agreedPrice != null) {
       updateData.agreedPrice = Number(req.body.agreedPrice);
+      updateData.completionRequestedAt = null;
+      updateData.completionConfirmedAt = null;
+      updateData.completionDeclinedReason = null;
     }
     if (action === 'reject') {
       updateData.rejectionReason = req.body.rejectionReason || null;
+      updateData.completionRequestedAt = null;
+      updateData.completionConfirmedAt = null;
+      updateData.completionDeclinedReason = null;
+    }
+    if (action === 'start') {
+      updateData.completionRequestedAt = null;
+      updateData.completionDeclinedReason = null;
     }
 
     const updatedBooking = await db.booking.update({
@@ -373,8 +385,193 @@ const runStatusTransition = async (req, res, action) => {
 export const acceptBooking = async (req, res) => runStatusTransition(req, res, 'accept');
 export const rejectBooking = async (req, res) => runStatusTransition(req, res, 'reject');
 export const startBooking = async (req, res) => runStatusTransition(req, res, 'start');
-export const completeBooking = async (req, res) => runStatusTransition(req, res, 'complete');
 export const cancelBooking = async (req, res) => runStatusTransition(req, res, 'cancel');
+
+const getBookingForCompletionFlow = async (id) => {
+  return db.booking.findUnique({
+    where: { id },
+    include: {
+      student: { include: { studentProfile: true } },
+      artisan: { include: { user: true } },
+      payment: true,
+      review: true,
+    },
+  });
+};
+
+export const requestBookingCompletion = async (req, res) => {
+  try {
+    const booking = await getBookingForCompletionFlow(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const { isArtisanOwner } = isBookingParticipant(booking, req.user);
+    if (!isArtisanOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (booking.status !== 'IN_PROGRESS') {
+      return res.status(400).json({ error: 'Completion can only be requested for in-progress bookings' });
+    }
+
+    if (booking.completionRequestedAt) {
+      return res.status(400).json({ error: 'Completion request is already pending student confirmation' });
+    }
+
+    const updatedBooking = await db.booking.update({
+      where: { id: booking.id },
+      data: {
+        completionRequestedAt: new Date(),
+        completionDeclinedReason: null,
+      },
+      include: {
+        student: { include: { studentProfile: true } },
+        artisan: { include: { user: true } },
+        payment: true,
+        review: true,
+      },
+    });
+
+    notifyUser({
+      userId: booking.studentId,
+      title: 'Completion confirmation needed',
+      body: `${booking.artisan.firstName} ${booking.artisan.lastName} marked ${formatBookingTitle(booking.title)} as completed. Please confirm.`,
+      type: 'BOOKING_STATUS',
+      metadata: { bookingId: booking.id, status: 'COMPLETION_PENDING_CONFIRMATION' },
+    });
+
+    sendSafeEmail({
+      to: booking.student.email,
+      subject: `Confirm completion for ${formatBookingTitle(booking.title)}`,
+      html: `
+        <p>Hello ${booking.student.studentProfile?.firstName || 'there'},</p>
+        <p>Your artisan requested completion confirmation for <strong>${formatBookingTitle(booking.title)}</strong>.</p>
+        <p>Please open CampusConnect to confirm completion or request adjustments.</p>
+      `,
+    });
+
+    return res.json({ booking: serializeBooking(updatedBooking) });
+  } catch (error) {
+    console.error('Request booking completion error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const confirmBookingCompletion = async (req, res) => {
+  try {
+    const booking = await getBookingForCompletionFlow(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const { isStudentOwner } = isBookingParticipant(booking, req.user);
+    if (!isStudentOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (booking.status !== 'IN_PROGRESS') {
+      return res.status(400).json({ error: 'Only in-progress bookings can be confirmed complete' });
+    }
+
+    if (!booking.completionRequestedAt) {
+      return res.status(400).json({ error: 'No completion request to confirm yet' });
+    }
+
+    const updatedBooking = await db.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: 'COMPLETED',
+        completionConfirmedAt: new Date(),
+        completionRequestedAt: null,
+        completionDeclinedReason: null,
+      },
+      include: {
+        student: { include: { studentProfile: true } },
+        artisan: { include: { user: true } },
+        payment: true,
+        review: true,
+      },
+    });
+
+    notifyUser({
+      userId: booking.artisan.userId,
+      title: 'Booking completed',
+      body: `${booking.student.studentProfile?.firstName || 'Student'} confirmed completion for ${formatBookingTitle(booking.title)}.`,
+      type: 'BOOKING_STATUS',
+      metadata: { bookingId: booking.id, status: 'COMPLETED' },
+    });
+
+    sendSafeEmail({
+      to: booking.artisan.user.email,
+      subject: `Booking completed: ${formatBookingTitle(booking.title)}`,
+      html: `
+        <p>Hello ${booking.artisan.firstName || 'there'},</p>
+        <p>The student confirmed completion for <strong>${formatBookingTitle(booking.title)}</strong>.</p>
+        <p>You can now request withdrawal for eligible completed jobs in the Payments tab.</p>
+      `,
+    });
+
+    return res.json({ booking: serializeBooking(updatedBooking) });
+  } catch (error) {
+    console.error('Confirm booking completion error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const declineBookingCompletion = async (req, res) => {
+  try {
+    const booking = await getBookingForCompletionFlow(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const { isStudentOwner } = isBookingParticipant(booking, req.user);
+    if (!isStudentOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (booking.status !== 'IN_PROGRESS') {
+      return res.status(400).json({ error: 'Only in-progress bookings can be revised' });
+    }
+
+    if (!booking.completionRequestedAt) {
+      return res.status(400).json({ error: 'No pending completion request to decline' });
+    }
+
+    const reason = req.body.reason?.trim() || 'Please resolve outstanding issues before completion.';
+
+    const updatedBooking = await db.booking.update({
+      where: { id: booking.id },
+      data: {
+        completionRequestedAt: null,
+        completionDeclinedReason: reason,
+      },
+      include: {
+        student: { include: { studentProfile: true } },
+        artisan: { include: { user: true } },
+        payment: true,
+        review: true,
+      },
+    });
+
+    notifyUser({
+      userId: booking.artisan.userId,
+      title: 'Completion request needs changes',
+      body: `${booking.student.studentProfile?.firstName || 'Student'} requested changes before confirming completion for ${formatBookingTitle(booking.title)}.`,
+      type: 'BOOKING_STATUS',
+      metadata: { bookingId: booking.id, status: 'IN_PROGRESS', reason },
+    });
+
+    return res.json({ booking: serializeBooking(updatedBooking) });
+  } catch (error) {
+    console.error('Decline booking completion error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Backward-compatible alias for older clients still calling /complete
+export const completeBooking = async (req, res) => requestBookingCompletion(req, res);
 
 export const updateBookingPrice = async (req, res) => {
   try {

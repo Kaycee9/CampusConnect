@@ -22,6 +22,10 @@ const refundSchema = z.object({
   reason: z.string().max(200, 'Reason is too long').optional(),
 });
 
+const withdrawalRequestSchema = z.object({
+  note: z.string().max(250, 'Note is too long').optional(),
+});
+
 router.use(authenticate);
 
 router.get('/bookings/:bookingId', validate(bookingIdSchema, 'params'), paymentController.getBookingPayment);
@@ -29,5 +33,7 @@ router.post('/bookings/:bookingId/initiate', validate(bookingIdSchema, 'params')
 router.post('/:paymentId/simulate', validate(paymentIdSchema, 'params'), validate(simulateSchema), paymentController.simulatePaymentOutcome);
 router.post('/:paymentId/retry', validate(paymentIdSchema, 'params'), paymentController.retryPaymentSimulation);
 router.post('/:paymentId/refund', validate(paymentIdSchema, 'params'), validate(refundSchema), paymentController.refundPayment);
+router.get('/withdrawals/summary', paymentController.getWithdrawalSummary);
+router.post('/withdrawals/request', validate(withdrawalRequestSchema), paymentController.requestWithdrawal);
 
 export default router;

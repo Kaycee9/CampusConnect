@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, CreditCard, HandCoins, RotateCcw, TrendingUp, Wallet, XCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -24,20 +24,39 @@ export default function Earnings() {
   const [activePayment, setActivePayment] = useState(null);
   const [activeBookingId, setActiveBookingId] = useState(null);
   const [activeAmount, setActiveAmount] = useState(0);
+  const [withdrawal, setWithdrawal] = useState({
+    availableBalance: 0,
+    eligibleCount: 0,
+    pendingAmount: 0,
+    requests: [],
+  });
 
-  const load = async (active) => {
+  const load = useCallback(async (active) => {
     setLoading(true);
     try {
-      const { data } = await api.get('/bookings');
+      const [bookingsRes, withdrawalRes] = await Promise.allSettled([
+        api.get('/bookings'),
+        user?.role === 'ARTISAN' ? api.get('/payments/withdrawals/summary') : Promise.resolve({ data: null }),
+      ]);
+
       if (!active) return;
-      setBookings(data.bookings || []);
+
+      if (bookingsRes.status === 'fulfilled') {
+        setBookings(bookingsRes.value.data.bookings || []);
+      } else {
+        throw bookingsRes.reason;
+      }
+
+      if (user?.role === 'ARTISAN' && withdrawalRes.status === 'fulfilled' && withdrawalRes.value?.data) {
+        setWithdrawal(withdrawalRes.value.data);
+      }
     } catch (error) {
       if (!active) return;
       toast.error(error.response?.data?.error || 'Unable to load payments data.');
     } finally {
       if (active) setLoading(false);
     }
-  };
+  }, [toast, user?.role]);
 
   useEffect(() => {
     let active = true;
@@ -47,7 +66,7 @@ export default function Earnings() {
     return () => {
       active = false;
     };
-  }, [toast]);
+  }, [load]);
 
   const role = user?.role;
 
@@ -166,6 +185,19 @@ export default function Earnings() {
     }
   };
 
+  const requestWithdrawal = async () => {
+    setPaymentBusy(true);
+    try {
+      await api.post('/payments/withdrawals/request', {});
+      toast.success('Withdrawal request submitted successfully.');
+      await load(true);
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to submit withdrawal request.');
+    } finally {
+      setPaymentBusy(false);
+    }
+  };
+
   return (
     <section className="earnings-page animate-fade-in">
       <div className="earnings-hero card">
@@ -215,6 +247,51 @@ export default function Earnings() {
           </div>
         </article>
       </div>
+
+      {isArtisan && (
+        <div className="earnings-withdrawal card">
+          <div className="earnings-withdrawal__head">
+            <div>
+              <h2>Withdrawal balance</h2>
+              <p>Only completed bookings with successful payment are eligible for withdrawal.</p>
+            </div>
+            <Button
+              loading={paymentBusy}
+              onClick={requestWithdrawal}
+              disabled={Number(withdrawal.availableBalance || 0) <= 0}
+            >
+              Request withdrawal
+            </Button>
+          </div>
+          <div className="earnings-withdrawal__grid">
+            <div>
+              <small>Available now</small>
+              <strong>{toMoney(withdrawal.availableBalance)}</strong>
+            </div>
+            <div>
+              <small>Eligible bookings</small>
+              <strong>{withdrawal.eligibleCount}</strong>
+            </div>
+            <div>
+              <small>Pending requests</small>
+              <strong>{toMoney(withdrawal.pendingAmount)}</strong>
+            </div>
+          </div>
+          {withdrawal.requests?.length > 0 && (
+            <div className="earnings-withdrawal__list">
+              {withdrawal.requests.map((request) => (
+                <article key={request.id}>
+                  <div>
+                    <strong>{toMoney(request.amount)}</strong>
+                    <p>{request.itemCount} payment item(s)</p>
+                  </div>
+                  <Badge status={request.status}>{request.status}</Badge>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="earnings-ledger card">
         <div className="earnings-ledger__head">

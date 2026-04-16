@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CalendarCheck, CheckCircle2, CreditCard, MapPin, MessageSquare, XCircle } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, CreditCard, MapPin, MessageSquare, ShieldCheck, XCircle } from 'lucide-react';
 import api from '../../lib/api.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../components/ui/Toast.jsx';
@@ -33,6 +33,8 @@ export default function BookingDetail() {
   const [payment, setPayment] = useState(null);
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -185,6 +187,69 @@ export default function BookingDetail() {
     }
   };
 
+  const requestCompletion = async () => {
+    setBusy(true);
+    try {
+      await api.patch(`/bookings/${id}/request-completion`);
+      toast.success('Completion request sent. Waiting for student confirmation.');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to request completion.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmCompletion = async () => {
+    setBusy(true);
+    try {
+      await api.patch(`/bookings/${id}/confirm-completion`);
+      toast.success('Booking confirmed as completed. You can now leave a review.');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to confirm completion.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const declineCompletion = async () => {
+    setBusy(true);
+    try {
+      await api.patch(`/bookings/${id}/decline-completion`, {
+        reason: 'Please resolve remaining issues before completion confirmation.',
+      });
+      toast.info('Requested adjustments before confirming completion.');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to decline completion request.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitReview = async () => {
+    if (Number(reviewRating) < 1 || Number(reviewRating) > 5) {
+      toast.error('Rating must be between 1 and 5.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await api.post(`/reviews/bookings/${id}`, {
+        rating: Number(reviewRating),
+        comment: reviewComment.trim() || undefined,
+      });
+      toast.success('Review submitted. Thank you!');
+      setReviewComment('');
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Unable to submit review.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const isStudent = user?.role === 'STUDENT';
   const isArtisan = user?.role === 'ARTISAN';
   const formatMoney = (value) => `NGN ${Number(value || 0).toLocaleString()}`;
@@ -194,6 +259,9 @@ export default function BookingDetail() {
   const canStudentPay = isStudent && booking?.status === 'ACCEPTED';
   const canStudentRefund = isStudent && payment?.status === 'SUCCESS';
   const canShowPrimaryPay = canStudentPay && (!payment || payment.status === 'PENDING' || payment.status === 'FAILED');
+  const completionPending = Boolean(booking?.completionRequestedAt);
+  const canStudentConfirmCompletion = isStudent && booking?.status === 'IN_PROGRESS' && completionPending;
+  const canStudentReview = isStudent && booking?.status === 'COMPLETED' && !booking?.review;
 
   const handlePrimaryPay = async () => {
     if (!payment) {
@@ -305,9 +373,25 @@ export default function BookingDetail() {
               </Button>
             )}
             {isArtisan && booking.status === 'IN_PROGRESS' && (
-              <Button loading={busy} onClick={() => action('complete')}>
-                Mark completed
-              </Button>
+              completionPending ? (
+                <Button variant="ghost" disabled icon={ShieldCheck}>
+                  Awaiting student confirmation
+                </Button>
+              ) : (
+                <Button loading={busy} onClick={requestCompletion}>
+                  Request completion confirmation
+                </Button>
+              )
+            )}
+            {canStudentConfirmCompletion && (
+              <>
+                <Button loading={busy} onClick={confirmCompletion} icon={ShieldCheck}>
+                  Confirm completion
+                </Button>
+                <Button variant="ghost" loading={busy} onClick={declineCompletion}>
+                  Request adjustments
+                </Button>
+              </>
             )}
             <Button
               variant="ghost"
@@ -424,6 +508,59 @@ export default function BookingDetail() {
             </div>
           )}
         </div>
+
+        {booking.status === 'IN_PROGRESS' && completionPending && (
+          <div className="booking-completion card">
+            <h3>Completion verification in progress</h3>
+            <p>
+              {isStudent
+                ? 'The artisan requested completion confirmation. Verify the work and confirm, or request adjustments.'
+                : 'Completion request sent to student. Waiting for student confirmation before the booking becomes completed.'}
+            </p>
+          </div>
+        )}
+
+        {booking.review && (
+          <div className="booking-review card">
+            <h3>Student review</h3>
+            <p className="booking-review__rating">Rating: {booking.review.rating}/5</p>
+            {booking.review.comment && <p>{booking.review.comment}</p>}
+          </div>
+        )}
+
+        {canStudentReview && (
+          <div className="booking-review card">
+            <h3>Leave a review</h3>
+            <p>Share feedback on this completed booking.</p>
+            <div className="booking-counter__row">
+              <div className="booking-filters__field">
+                <label>Rating (1-5)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  className="booking-filters__search"
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(e.target.value)}
+                />
+              </div>
+              <div className="booking-filters__field">
+                <label>Comment</label>
+                <input
+                  type="text"
+                  className="booking-filters__search"
+                  maxLength={500}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="How was the service quality, communication, and timeliness?"
+                />
+              </div>
+            </div>
+            <div className="booking-detail__actions">
+              <Button loading={busy} onClick={submitReview}>Submit review</Button>
+            </div>
+          </div>
+        )}
 
         {['PENDING', 'ACCEPTED'].includes(booking.status) && (
           <div className="booking-counter card">

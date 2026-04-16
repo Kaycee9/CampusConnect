@@ -28,6 +28,7 @@ function BookingCard({ booking, userRole, onOpen, onAction, busy }) {
   const canArtisanRespond = userRole === 'ARTISAN' && booking.status === 'PENDING';
   const canArtisanStart = userRole === 'ARTISAN' && booking.status === 'ACCEPTED';
   const canArtisanComplete = userRole === 'ARTISAN' && booking.status === 'IN_PROGRESS';
+  const completionPending = Boolean(booking.completionRequestedAt);
 
   return (
     <article className="booking-card card">
@@ -80,9 +81,15 @@ function BookingCard({ booking, userRole, onOpen, onAction, busy }) {
             </Button>
           )}
           {canArtisanComplete && (
-            <Button size="sm" onClick={() => onAction('complete')} loading={busy} icon={CheckCheck}>
-              Complete
-            </Button>
+            completionPending ? (
+              <Button size="sm" variant="ghost" disabled icon={CheckCheck}>
+                Awaiting student confirmation
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => onAction('complete')} loading={busy} icon={CheckCheck}>
+                Request completion
+              </Button>
+            )
           )}
           <Button size="sm" variant="ghost" onClick={onOpen} icon={PencilLine}>
             Details
@@ -166,12 +173,13 @@ export default function Bookings() {
     setBusyId(bookingId);
     try {
       const extra = action === 'reject' ? { rejectionReason: 'I am unavailable for the requested schedule.' } : {};
-      await api.patch(`/bookings/${bookingId}/${action}`, extra);
+      const endpoint = action === 'complete' ? 'request-completion' : action;
+      await api.patch(`/bookings/${bookingId}/${endpoint}`, extra);
       const successMap = {
         accept: 'Booking accepted.',
         reject: 'Booking rejected.',
         start: 'Job marked as in progress.',
-        complete: 'Job marked as completed.',
+        complete: 'Completion request sent. Waiting for student confirmation.',
         cancel: 'Booking cancelled.',
       };
       toast.success(successMap[action] || 'Booking updated successfully.');

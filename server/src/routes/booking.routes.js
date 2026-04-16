@@ -53,6 +53,10 @@ const priceUpdateSchema = z.object({
   note: z.string().max(250, 'Note is too long').optional(),
 });
 
+const completionDeclineSchema = z.object({
+  reason: z.string().min(3, 'Please provide a brief reason').max(250, 'Reason is too long').optional(),
+});
+
 router.use(authenticate);
 
 router.get('/', bookingController.listBookings);
@@ -62,6 +66,9 @@ router.patch('/:id/accept', authorize('ARTISAN'), validate(bookingIdSchema, 'par
 router.patch('/:id/reject', authorize('ARTISAN'), validate(bookingIdSchema, 'params'), validate(rejectSchema), bookingController.rejectBooking);
 router.patch('/:id/start', authorize('ARTISAN'), validate(bookingIdSchema, 'params'), bookingController.startBooking);
 router.patch('/:id/complete', authorize('ARTISAN'), validate(bookingIdSchema, 'params'), bookingController.completeBooking);
+router.patch('/:id/request-completion', authorize('ARTISAN'), validate(bookingIdSchema, 'params'), bookingController.requestBookingCompletion);
+router.patch('/:id/confirm-completion', authorize('STUDENT'), validate(bookingIdSchema, 'params'), bookingController.confirmBookingCompletion);
+router.patch('/:id/decline-completion', authorize('STUDENT'), validate(bookingIdSchema, 'params'), validate(completionDeclineSchema), bookingController.declineBookingCompletion);
 router.patch('/:id/cancel', authorize('STUDENT'), validate(bookingIdSchema, 'params'), bookingController.cancelBooking);
 router.patch('/:id/price', authorize('STUDENT', 'ARTISAN', 'ADMIN'), validate(bookingIdSchema, 'params'), validate(priceUpdateSchema), bookingController.updateBookingPrice);
 

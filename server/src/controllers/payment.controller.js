@@ -36,6 +36,27 @@ const getBookingWithPayment = async (bookingId) => {
   });
 };
 
+const getArtisanProfileByUser = async (userId) => {
+  return db.artisanProfile.findUnique({ where: { userId } });
+};
+
+const getEligibleWithdrawalPayments = async (artisanId) => {
+  return db.payment.findMany({
+    where: {
+      status: 'SUCCESS',
+      booking: {
+        artisanId,
+        status: 'COMPLETED',
+      },
+      withdrawalItem: { is: null },
+    },
+    include: {
+      booking: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+};
+
 const isBookingParticipant = (booking, user) => {
   const isStudentOwner = booking.studentId === user.userId;
   const isArtisanOwner = booking.artisan.userId === user.userId;
@@ -390,6 +411,123 @@ export const refundPayment = async (req, res) => {
     return res.json({ payment: serializePayment(refreshed) });
   } catch (error) {
     console.error('Refund payment error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getWithdrawalSummary = async (req, res) => {
+  try {
+    if (req.user.role !== 'ARTISAN') {
+      return res.status(403).json({ error: 'Only artisans can view withdrawal summary' });
+    }
+
+    const artisan = await getArtisanProfileByUser(req.user.userId);
+    if (!artisan) {
+      return res.status(404).json({ error: 'Artisan profile not found' });
+    }
+
+    const eligiblePayments = await getEligibleWithdrawalPayments(artisan.id);
+    const availableBalance = eligiblePayments.reduce((sum, payment) => sum + Number(payment.artisanAmount || 0), 0);
+
+    const pendingRequests = await db.withdrawalRequest.findMany({
+      where: {
+        artisanId: artisan.id,
+        status: 'PENDING',
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        items: true,
+      },
+    });
+
+    const recentRequests = await db.withdrawalRequest.findMany({
+      where: { artisanId: artisan.id },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: {
+        items: true,
+      },
+    });
+
+    const pendingAmount = pendingRequests.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    return res.json({
+      availableBalance: toCurrencyAmount(availableBalance),
+      eligibleCount: eligiblePayments.length,
+      pendingAmount: toCurrencyAmount(pendingAmount),
+      requests: recentRequests.map((request) => ({
+        id: request.id,
+        amount: request.amount,
+        status: request.status,
+        note: request.note,
+        itemCount: request.items.length,
+        createdAt: request.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Get withdrawal summary error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const requestWithdrawal = async (req, res) => {
+  try {
+    if (req.user.role !== 'ARTISAN') {
+      return res.status(403).json({ error: 'Only artisans can request withdrawals' });
+    }
+
+    const artisan = await getArtisanProfileByUser(req.user.userId);
+    if (!artisan) {
+      return res.status(404).json({ error: 'Artisan profile not found' });
+    }
+
+    const eligiblePayments = await getEligibleWithdrawalPayments(artisan.id);
+    if (eligiblePayments.length === 0) {
+      return res.status(400).json({ error: 'No completed paid bookings are currently eligible for withdrawal' });
+    }
+
+    const amount = toCurrencyAmount(
+      eligiblePayments.reduce((sum, payment) => sum + Number(payment.artisanAmount || 0), 0)
+    );
+
+    const created = await db.$transaction(async (tx) => {
+      const request = await tx.withdrawalRequest.create({
+        data: {
+          artisanId: artisan.id,
+          amount,
+          status: 'PENDING',
+          note: req.body.note?.trim() || null,
+        },
+      });
+
+      await tx.withdrawalItem.createMany({
+        data: eligiblePayments.map((payment) => ({
+          requestId: request.id,
+          paymentId: payment.id,
+          amount: toCurrencyAmount(payment.artisanAmount),
+        })),
+      });
+
+      return tx.withdrawalRequest.findUnique({
+        where: { id: request.id },
+        include: {
+          items: true,
+        },
+      });
+    });
+
+    return res.status(201).json({
+      request: {
+        id: created.id,
+        amount: created.amount,
+        status: created.status,
+        note: created.note,
+        itemCount: created.items.length,
+        createdAt: created.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('Request withdrawal error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
