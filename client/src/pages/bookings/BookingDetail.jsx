@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { CalendarCheck, CheckCircle2, CreditCard, MapPin, MessageSquare, ShieldCheck, XCircle } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { CalendarCheck, CreditCard, MapPin, MessageSquare, ShieldCheck } from 'lucide-react';
 import api from '../../lib/api.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../components/ui/Toast.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Badge from '../../components/ui/Badge.jsx';
 import Avatar from '../../components/ui/Avatar.jsx';
-import Modal from '../../components/ui/Modal.jsx';
 import './Bookings.css';
 
 const formatBookingTitle = (title = '') => {
@@ -22,6 +21,7 @@ const formatBookingTitle = (title = '') => {
 export default function BookingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const toast = useToast();
   const [booking, setBooking] = useState(null);
@@ -32,7 +32,6 @@ export default function BookingDetail() {
   const [counterNote, setCounterNote] = useState('');
   const [payment, setPayment] = useState(null);
   const [paymentBusy, setPaymentBusy] = useState(false);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
 
@@ -124,8 +123,14 @@ export default function BookingDetail() {
     try {
       const { data } = await api.post(`/payments/bookings/${id}/initiate`);
       setPayment(data.payment);
-      setPaymentModalOpen(true);
-      toast.success('Simulation payment session started.');
+
+      if (data.checkout?.authorizationUrl) {
+        toast.info('Redirecting to secure checkout...');
+        window.location.assign(data.checkout.authorizationUrl);
+        return;
+      }
+
+      toast.success('Payment session is ready.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Unable to initiate payment.');
     } finally {
@@ -133,42 +138,27 @@ export default function BookingDetail() {
     }
   };
 
-  const simulateOutcome = async (outcome) => {
-    if (!payment?.id) return;
+  const verifyPayment = useCallback(async (paymentId, referenceFromQuery) => {
+    if (!paymentId) return;
 
     setPaymentBusy(true);
     try {
-      const { data } = await api.post(`/payments/${payment.id}/simulate`, { outcome });
+      const { data } = await api.post(`/payments/${paymentId}/verify`, {
+        reference: referenceFromQuery || undefined,
+      });
       setPayment(data.payment);
-      setPaymentModalOpen(false);
-      const textMap = {
-        success: 'Payment simulated successfully.',
-        failed: 'Payment simulated as failed.',
-        cancelled: 'Payment simulation cancelled.',
-      };
-      toast.success(textMap[outcome] || 'Simulation complete.');
+      if (data.payment?.status === 'SUCCESS') {
+        toast.success('Payment verified successfully.');
+      } else {
+        toast.info('Payment is still pending confirmation.');
+      }
       await load();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Unable to simulate payment outcome.');
+      toast.error(error.response?.data?.error || 'Unable to verify payment status.');
     } finally {
       setPaymentBusy(false);
     }
-  };
-
-  const retryPayment = async () => {
-    if (!payment?.id) return;
-    setPaymentBusy(true);
-    try {
-      const { data } = await api.post(`/payments/${payment.id}/retry`);
-      setPayment(data.payment);
-      setPaymentModalOpen(true);
-      toast.success('Simulation reset. Choose an outcome.');
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Unable to retry payment simulation.');
-    } finally {
-      setPaymentBusy(false);
-    }
-  };
+  }, [load, toast]);
 
   const refundPayment = async () => {
     if (!payment?.id) return;
@@ -266,20 +256,19 @@ export default function BookingDetail() {
   const canStudentReview = isStudent && booking?.status === 'COMPLETED' && !booking?.review;
 
   const handlePrimaryPay = async () => {
-    if (!payment) {
-      await initiatePayment();
-      return;
-    }
-
-    if (payment.status === 'PENDING') {
-      setPaymentModalOpen(true);
-      return;
-    }
-
-    if (payment.status === 'FAILED') {
-      await retryPayment();
-    }
+    await initiatePayment();
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const reference = params.get('reference') || params.get('trxref');
+
+    if (!reference || !payment?.id || payment.status === 'SUCCESS') {
+      return;
+    }
+
+    verifyPayment(payment.id, reference);
+  }, [location.search, payment?.id, payment?.status, verifyPayment]);
 
   if (loading) {
     return <div style={{ padding: 'var(--space-8)' }}>Loading booking...</div>;
@@ -414,7 +403,7 @@ export default function BookingDetail() {
                   ? 'Payment unlocks only after the artisan accepts this booking.'
                   : payment?.status === 'SUCCESS'
                     ? 'Payment confirmed. Job can be started.'
-                    : 'No real card details required. One click is enough.'}
+                    : 'Proceed to secure checkout to complete payment.'}
               </p>
             </div>
             <div className="booking-payment__head-right">
@@ -427,7 +416,7 @@ export default function BookingDetail() {
               )}
               {canShowPrimaryPay && (
                 <Button loading={paymentBusy} onClick={handlePrimaryPay} icon={CreditCard}>
-                  {payment?.status === 'FAILED' ? 'Retry payment' : 'Pay now'}
+                  {payment?.status === 'FAILED' ? 'Try payment again' : 'Pay now'}
                 </Button>
               )}
               {isStudent && !paymentUnlocked && (
@@ -471,7 +460,7 @@ export default function BookingDetail() {
 
             {canStudentRefund && (
               <Button variant="ghost" loading={paymentBusy} onClick={refundPayment}>
-                Refund (simulate)
+                Request refund
               </Button>
             )}
 
@@ -610,41 +599,6 @@ export default function BookingDetail() {
         )}
       </div>
 
-      <Modal
-        isOpen={paymentModalOpen}
-        onClose={() => !paymentBusy && setPaymentModalOpen(false)}
-        title="Simulate payment"
-        size="md"
-      >
-        <div className="payment-sim">
-          <div className="payment-sim__card">
-            <small>Mock Card (Auto-provided)</small>
-            <strong>4242 4242 4242 4242</strong>
-            <p>Exp 12/34 · CVV 123 · Name CampusConnect Test</p>
-          </div>
-
-          <div className="payment-sim__amount">
-            <small>Charge amount</small>
-            <strong>{formatMoney(payment?.amount ?? booking?.agreedPrice)}</strong>
-          </div>
-
-          <p className="payment-sim__caption">
-            Pick any outcome below. This is a sandbox simulation and stores the transaction record in your database.
-          </p>
-
-          <div className="payment-sim__actions">
-            <Button loading={paymentBusy} onClick={() => simulateOutcome('success')} icon={CheckCircle2}>
-              Simulate success
-            </Button>
-            <Button variant="ghost" loading={paymentBusy} onClick={() => simulateOutcome('failed')} icon={XCircle}>
-              Simulate failure
-            </Button>
-            <Button variant="ghost" loading={paymentBusy} onClick={() => simulateOutcome('cancelled')}>
-              Cancel simulation
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </section>
   );
 }

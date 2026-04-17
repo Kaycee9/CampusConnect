@@ -14,6 +14,7 @@ import bookingRoutes from './routes/booking.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import reviewRoutes from './routes/review.routes.js';
+import { handlePaystackWebhook } from './controllers/payment.controller.js';
 
 const app = express();
 
@@ -29,6 +30,9 @@ app.use(
     credentials: true,
   })
 );
+
+// Paystack webhook must receive raw body for signature validation
+app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), handlePaystackWebhook);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));

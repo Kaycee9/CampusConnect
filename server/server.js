@@ -3,6 +3,8 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import app from './src/app.js';
 import env from './src/config/env.js';
+import db from './src/config/database.js';
+import { ensurePlatformLedgerAccounts } from './src/lib/ledger.js';
 
 const httpServer = createServer(app);
 
@@ -60,8 +62,11 @@ app.set('io', io);
 
 // ─── START SERVER ─────────────────────────────────────────────────────────────
 
-httpServer.listen(env.PORT, () => {
-  console.log(`
+const start = async () => {
+  await ensurePlatformLedgerAccounts(db);
+
+  httpServer.listen(env.PORT, () => {
+    console.log(`
   ╔═══════════════════════════════════════════╗
   ║   CampusConnect API Server                ║
   ║   Port: ${env.PORT}                            ║
@@ -69,6 +74,12 @@ httpServer.listen(env.PORT, () => {
   ║   URL:  http://localhost:${env.PORT}            ║
   ╚═══════════════════════════════════════════╝
   `);
+  });
+};
+
+start().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 export { io };

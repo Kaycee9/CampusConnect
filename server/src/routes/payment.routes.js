@@ -14,10 +14,6 @@ const paymentIdSchema = z.object({
   paymentId: z.string().min(1, 'Payment ID is required'),
 });
 
-const simulateSchema = z.object({
-  outcome: z.enum(['success', 'failed', 'cancelled']),
-});
-
 const refundSchema = z.object({
   reason: z.string().max(200, 'Reason is too long').optional(),
 });
@@ -30,8 +26,7 @@ router.use(authenticate);
 
 router.get('/bookings/:bookingId', validate(bookingIdSchema, 'params'), paymentController.getBookingPayment);
 router.post('/bookings/:bookingId/initiate', validate(bookingIdSchema, 'params'), paymentController.initiateBookingPayment);
-router.post('/:paymentId/simulate', validate(paymentIdSchema, 'params'), validate(simulateSchema), paymentController.simulatePaymentOutcome);
-router.post('/:paymentId/retry', validate(paymentIdSchema, 'params'), paymentController.retryPaymentSimulation);
+router.post('/:paymentId/verify', validate(paymentIdSchema, 'params'), paymentController.verifyPaymentStatus);
 router.post('/:paymentId/refund', validate(paymentIdSchema, 'params'), validate(refundSchema), paymentController.refundPayment);
 router.get('/withdrawals/summary', paymentController.getWithdrawalSummary);
 router.post('/withdrawals/request', validate(withdrawalRequestSchema), paymentController.requestWithdrawal);

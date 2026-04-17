@@ -1,10 +1,16 @@
 import db from '../config/database.js';
+import env from '../config/env.js';
+import {
+  initializePaystackTransaction,
+  isValidPaystackSignature,
+  verifyPaystackTransaction,
+} from '../lib/paystack.js';
 
-const PLATFORM_FEE_RATE = 0.1;
+const PLATFORM_FEE_RATE = Math.max(0, Number(env.PLATFORM_FEE_PERCENT || 10) / 100);
 
 const makeReference = () => {
   const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `SIM-${Date.now()}-${random}`;
+  return `PAY-${Date.now()}-${random}`;
 };
 
 const toCurrencyAmount = (value) => Number(Number(value || 0).toFixed(2));
@@ -20,6 +26,8 @@ const breakdownAmount = (amount) => {
     artisanAmount,
   };
 };
+
+const toMinorUnit = (value) => Math.round(Number(value || 0) * 100);
 
 const getBookingWithPayment = async (bookingId) => {
   return db.booking.findUnique({
@@ -82,6 +90,7 @@ const serializePayment = (payment) => {
     platformFee: payment.platformFee,
     artisanAmount: payment.artisanAmount,
     reference: payment.reference,
+    paystackReference: payment.paystackRef,
     status: payment.status,
     paidAt: payment.paidAt,
     createdAt: payment.createdAt,
@@ -96,6 +105,48 @@ const serializePayment = (payment) => {
       actorId: event.actorId,
     })),
   };
+};
+
+const mapGatewayStatus = (status) => {
+  if (status === 'success') return 'SUCCESS';
+  if (status === 'failed' || status === 'abandoned' || status === 'reversed') return 'FAILED';
+  return 'PENDING';
+};
+
+const updatePaymentStatus = async ({ paymentId, fromStatus, toStatus, actorId, action, note, metadata, paidAt, paystackReference }) => {
+  const payload = { status: toStatus };
+
+  if (toStatus === 'SUCCESS') {
+    payload.paidAt = paidAt || new Date();
+  }
+
+  if (toStatus !== 'SUCCESS' && fromStatus !== 'SUCCESS') {
+    payload.paidAt = null;
+  }
+
+  if (paystackReference) {
+    payload.paystackRef = paystackReference;
+  }
+
+  await db.payment.update({
+    where: { id: paymentId },
+    data: payload,
+  });
+
+  await createPaymentEvent({
+    paymentId,
+    actorId,
+    action,
+    fromStatus,
+    toStatus,
+    note,
+    metadata,
+  });
+
+  return db.payment.findUnique({
+    where: { id: paymentId },
+    include: { events: { orderBy: { createdAt: 'desc' } } },
+  });
 };
 
 const createPaymentEvent = ({ paymentId, actorId, action, fromStatus, toStatus, note, metadata }) => {
@@ -158,7 +209,10 @@ export const initiateBookingPayment = async (req, res) => {
     }
 
     if (booking.payment?.status === 'SUCCESS') {
-      return res.json({ payment: serializePayment(booking.payment) });
+      return res.json({
+        payment: serializePayment(booking.payment),
+        checkout: null,
+      });
     }
 
     if (booking.payment?.status === 'REFUNDED') {
@@ -186,7 +240,7 @@ export const initiateBookingPayment = async (req, res) => {
         action: 'INITIATED',
         fromStatus: null,
         toStatus: 'PENDING',
-        note: 'Simulation initiated',
+        note: 'Checkout initialized',
       });
     } else {
       payment = await db.payment.update({
@@ -207,23 +261,45 @@ export const initiateBookingPayment = async (req, res) => {
         action: 'REOPENED',
         fromStatus: booking.payment.status,
         toStatus: 'PENDING',
-        note: 'Simulation reopened',
+        note: 'Checkout reinitialized',
       });
     }
+
+    const callbackUrl = `${env.CLIENT_URL}/bookings/${booking.id}`;
+
+    const checkout = await initializePaystackTransaction({
+      email: booking.student.email,
+      amount: toMinorUnit(amounts.amount),
+      reference: payment.reference,
+      callback_url: callbackUrl,
+      metadata: {
+        bookingId: booking.id,
+        paymentId: payment.id,
+        studentId: booking.studentId,
+        artisanId: booking.artisanId,
+      },
+    });
 
     const hydrated = await db.payment.findUnique({
       where: { id: payment.id },
       include: { events: { orderBy: { createdAt: 'desc' } } },
     });
 
-    return res.status(201).json({ payment: serializePayment(hydrated) });
+    return res.status(201).json({
+      payment: serializePayment(hydrated),
+      checkout: {
+        authorizationUrl: checkout.authorization_url,
+        accessCode: checkout.access_code,
+        reference: checkout.reference,
+      },
+    });
   } catch (error) {
     console.error('Initiate booking payment error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-export const simulatePaymentOutcome = async (req, res) => {
+export const verifyPaymentStatus = async (req, res) => {
   try {
     const payment = await db.payment.findUnique({
       where: { id: req.params.paymentId },
@@ -246,113 +322,138 @@ export const simulatePaymentOutcome = async (req, res) => {
     }
 
     if (!access.isStudentOwner && !access.isAdmin) {
-      return res.status(403).json({ error: 'Only the student can run payment simulation' });
+      return res.status(403).json({ error: 'Only the student can verify this payment' });
     }
 
-    if (payment.status !== 'PENDING') {
-      return res.status(400).json({ error: 'Only pending payments can be simulated' });
+    if (payment.status === 'SUCCESS') {
+      const alreadyPaid = await db.payment.findUnique({
+        where: { id: payment.id },
+        include: { events: { orderBy: { createdAt: 'desc' } } },
+      });
+      return res.json({ payment: serializePayment(alreadyPaid) });
     }
 
-    const outcome = req.body.outcome;
-    const map = {
-      success: { status: 'SUCCESS', action: 'SIMULATED_SUCCESS', note: 'Simulation marked as successful' },
-      failed: { status: 'FAILED', action: 'SIMULATED_FAILURE', note: 'Simulation marked as failed' },
-      cancelled: { status: 'FAILED', action: 'SIMULATED_CANCELLED', note: 'Simulation cancelled by user' },
-    };
+    const gateway = await verifyPaystackTransaction(payment.reference);
+    const nextStatus = mapGatewayStatus(gateway.status);
+    const expectedAmount = toMinorUnit(payment.amount);
 
-    const selected = map[outcome];
-    if (!selected) {
-      return res.status(400).json({ error: 'Invalid simulation outcome' });
+    if (Number(gateway.amount) !== expectedAmount) {
+      await createPaymentEvent({
+        paymentId: payment.id,
+        actorId: req.user.userId,
+        action: 'VERIFY_AMOUNT_MISMATCH',
+        fromStatus: payment.status,
+        toStatus: payment.status,
+        note: 'Gateway amount does not match expected amount',
+        metadata: {
+          gatewayAmount: gateway.amount,
+          expectedAmount,
+          reference: payment.reference,
+        },
+      });
+      return res.status(409).json({ error: 'Gateway amount mismatch. Please contact support.' });
     }
 
-    const updated = await db.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: selected.status,
-        paidAt: selected.status === 'SUCCESS' ? new Date() : null,
-      },
-      include: { events: { orderBy: { createdAt: 'desc' } } },
-    });
+    const action = nextStatus === 'SUCCESS' ? 'VERIFY_SUCCESS' : 'VERIFY_PENDING_OR_FAILED';
+    const note = nextStatus === 'SUCCESS'
+      ? 'Verified successfully with Paystack'
+      : `Paystack status is ${gateway.status}`;
 
-    await createPaymentEvent({
+    const refreshed = await updatePaymentStatus({
       paymentId: payment.id,
-      actorId: req.user.userId,
-      action: selected.action,
       fromStatus: payment.status,
-      toStatus: selected.status,
-      note: selected.note,
-      metadata: { outcome },
-    });
-
-    const refreshed = await db.payment.findUnique({
-      where: { id: payment.id },
-      include: { events: { orderBy: { createdAt: 'desc' } } },
+      toStatus: nextStatus,
+      actorId: req.user.userId,
+      action,
+      note,
+      metadata: {
+        gatewayStatus: gateway.status,
+        reference: payment.reference,
+      },
+      paidAt: gateway.paid_at ? new Date(gateway.paid_at) : undefined,
+      paystackReference: String(gateway.reference || ''),
     });
 
     return res.json({ payment: serializePayment(refreshed) });
   } catch (error) {
-    console.error('Simulate payment outcome error:', error);
+    console.error('Verify payment error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-export const retryPaymentSimulation = async (req, res) => {
+export const handlePaystackWebhook = async (req, res) => {
   try {
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
+    const signature = req.headers['x-paystack-signature'];
+
+    if (!isValidPaystackSignature(rawBody, String(signature || ''))) {
+      return res.status(401).json({ error: 'Invalid webhook signature' });
+    }
+
+    let event;
+    try {
+      event = JSON.parse(rawBody);
+    } catch (_error) {
+      return res.status(400).json({ error: 'Invalid JSON body' });
+    }
+
+    if (!event?.data?.reference) {
+      return res.status(200).json({ ok: true });
+    }
+
+    if (event.event !== 'charge.success' && event.event !== 'charge.failed') {
+      return res.status(200).json({ ok: true });
+    }
+
     const payment = await db.payment.findUnique({
-      where: { id: req.params.paymentId },
-      include: {
-        booking: {
-          include: {
-            artisan: true,
-          },
-        },
-      },
+      where: { reference: String(event.data.reference) },
     });
 
     if (!payment) {
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(200).json({ ok: true });
     }
 
-    const access = ensureBookingAccess(payment.booking, req.user);
-    if (!access) {
-      return res.status(403).json({ error: 'Access denied' });
+    const expectedAmount = toMinorUnit(payment.amount);
+    if (Number(event.data.amount) !== expectedAmount) {
+      await createPaymentEvent({
+        paymentId: payment.id,
+        action: 'WEBHOOK_AMOUNT_MISMATCH',
+        fromStatus: payment.status,
+        toStatus: payment.status,
+        note: 'Webhook amount does not match expected amount',
+        metadata: {
+          gatewayAmount: event.data.amount,
+          expectedAmount,
+          event: event.event,
+        },
+      });
+      return res.status(200).json({ ok: true });
     }
 
-    if (!access.isStudentOwner && !access.isAdmin) {
-      return res.status(403).json({ error: 'Only the student can retry payment simulation' });
+    const nextStatus = event.event === 'charge.success' ? 'SUCCESS' : 'FAILED';
+
+    if (payment.status === nextStatus || payment.status === 'REFUNDED') {
+      return res.status(200).json({ ok: true });
     }
 
-    if (payment.status !== 'FAILED') {
-      return res.status(400).json({ error: 'Only failed payments can be retried' });
-    }
-
-    const updated = await db.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: 'PENDING',
-        reference: makeReference(),
-        paidAt: null,
-      },
-    });
-
-    await createPaymentEvent({
+    await updatePaymentStatus({
       paymentId: payment.id,
-      actorId: req.user.userId,
-      action: 'RETRY',
       fromStatus: payment.status,
-      toStatus: 'PENDING',
-      note: 'Retry simulation requested',
+      toStatus: nextStatus,
+      action: event.event === 'charge.success' ? 'WEBHOOK_SUCCESS' : 'WEBHOOK_FAILED',
+      note: `Processed ${event.event} webhook`,
+      metadata: {
+        event: event.event,
+        reference: event.data.reference,
+      },
+      paidAt: event.data.paid_at ? new Date(event.data.paid_at) : undefined,
+      paystackReference: String(event.data.reference || ''),
     });
 
-    const refreshed = await db.payment.findUnique({
-      where: { id: updated.id },
-      include: { events: { orderBy: { createdAt: 'desc' } } },
-    });
-
-    return res.json({ payment: serializePayment(refreshed) });
+    return res.status(200).json({ ok: true });
   } catch (error) {
-    console.error('Retry payment simulation error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Paystack webhook error:', error);
+    return res.status(200).json({ ok: true });
   }
 };
 
@@ -399,7 +500,7 @@ export const refundPayment = async (req, res) => {
       action: 'REFUND',
       fromStatus: payment.status,
       toStatus: 'REFUNDED',
-      note: req.body.reason || 'Simulation refund completed',
+      note: req.body.reason || 'Refund recorded',
       metadata: req.body.reason ? { reason: req.body.reason } : undefined,
     });
 

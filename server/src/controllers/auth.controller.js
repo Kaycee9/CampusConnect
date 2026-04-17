@@ -5,6 +5,7 @@ import db from '../config/database.js';
 import { generateTokenPair, setTokenCookies, clearTokenCookies } from '../lib/jwt.js';
 import env from '../config/env.js';
 import { sendEmail } from '../utils/email.js';
+import { ensureArtisanLedgerAccounts } from '../lib/ledger.js';
 
 export const register = async (req, res) => {
   try {
@@ -37,7 +38,7 @@ export const register = async (req, res) => {
           },
         });
       } else if (role === 'ARTISAN') {
-        await prisma.artisanProfile.create({
+        const artisanProfile = await prisma.artisanProfile.create({
           data: {
             userId: newUser.id,
             firstName,
@@ -50,6 +51,8 @@ export const register = async (req, res) => {
             startingPrice: startingPrice ? Number(startingPrice) : null,
           },
         });
+
+        await ensureArtisanLedgerAccounts(prisma, artisanProfile);
       }
 
       // Return user with profile included

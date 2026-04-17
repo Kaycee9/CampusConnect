@@ -15,6 +15,10 @@ const env = {
   // Client
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
 
+  // Ledger / settlement
+  LEDGER_CURRENCY: process.env.LEDGER_CURRENCY || 'NGN',
+  LEDGER_SETTLEMENT_DELAY_HOURS: parseInt(process.env.LEDGER_SETTLEMENT_DELAY_HOURS, 10) || 24,
+
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,

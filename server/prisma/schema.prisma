@@ -55,6 +55,19 @@ enum WithdrawalStatus {
   PAID
 }
 
+enum LedgerAccountType {
+  PLATFORM_ESCROW
+  PLATFORM_REVENUE
+  ARTISAN_PENDING_SETTLEMENT
+  ARTISAN_AVAILABLE
+  ARTISAN_IN_PAYOUT
+}
+
+enum LedgerEntryType {
+  CREDIT
+  DEBIT
+}
+
 // ─── MODELS ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -135,6 +148,7 @@ model ArtisanProfile {
   bookings Booking[] @relation("ArtisanBookings")
   reviews  Review[]
   withdrawalRequests WithdrawalRequest[]
+  ledgerAccounts LedgerAccount[]
 }
 
 model Booking {
@@ -270,4 +284,42 @@ model Notification {
   isRead    Boolean  @default(false)
   metadata  Json?
   createdAt DateTime @default(now())
+}
+
+model LedgerAccount {
+  id          String            @id @default(cuid())
+  code        String            @unique
+  name        String
+  type        LedgerAccountType
+  currency    String            @default("NGN")
+  balance     Float              @default(0)
+  artisanId   String?
+  artisan     ArtisanProfile?    @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  entries     LedgerEntry[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([artisanId, type])
+  @@index([artisanId])
+  @@index([type])
+}
+
+model LedgerEntry {
+  id           String          @id @default(cuid())
+  accountId    String
+  account      LedgerAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  entryType    LedgerEntryType
+  amount       Float
+  currency     String          @default("NGN")
+  sourceType   String
+  sourceId     String?
+  reference    String?
+  note         String?
+  metadata     Json?
+  balanceAfter Float?
+  createdAt    DateTime        @default(now())
+
+  @@index([accountId, createdAt])
+  @@index([sourceType, sourceId])
+  @@index([reference])
 }
