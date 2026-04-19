@@ -58,9 +58,9 @@
   font-size: var(--text-base);
   color: var(--color-text-primary);
   background: var(--color-surface);
-  border: 1.5px solid var(--color-neutral-200);
+  border: 2px solid var(--color-neutral-200);
   border-radius: var(--radius-md);
-  transition: all var(--transition-base);
+  transition: all var(--transition-fast);
   outline: none;
 }
 
@@ -69,12 +69,12 @@
 }
 
 .input-group__input:hover {
-  border-color: var(--color-neutral-300);
+  border-color: var(--color-neutral-400);
 }
 
 .input-group__input:focus {
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px var(--color-primary-50);
+  border-color: var(--color-neutral-900);
+  box-shadow: 4px 4px 0px var(--color-primary-500);
 }
 
 .input-group__input--has-icon {
@@ -100,7 +100,7 @@
 }
 
 .input-group--error .input-group__input:focus {
-  box-shadow: 0 0 0 3px var(--color-error-50);
+  box-shadow: 4px 4px 0px var(--color-error-500);
 }
 
 .input-group__error {
