@@ -66,8 +66,7 @@
 }
 
 .artisan-card__price {
-  font-weight: var(--font-bold);
-  font-family: var(--font-mono);
+  font-weight: var(--font-semibold);
   color: var(--color-primary-700);
 }
 

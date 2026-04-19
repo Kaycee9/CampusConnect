@@ -1,9 +1,9 @@
 .card {
   background: var(--color-surface);
-  border: 2px solid var(--color-neutral-900);
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-base);
   box-shadow: var(--shadow-sm);
 }
 
@@ -13,9 +13,8 @@
 .card--pad-lg   { padding: var(--space-8); }
 
 .card--hover:hover {
-  border-color: var(--color-neutral-900);
   box-shadow: var(--shadow-md);
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
 }
 
 .card--clickable {

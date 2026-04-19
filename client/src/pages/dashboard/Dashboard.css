@@ -7,8 +7,8 @@
 }
 
 .dashboard-page .card {
-  border: 2px solid var(--color-neutral-900);
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
 }
@@ -28,14 +28,13 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 4px;
-  background: var(--color-primary-500);
+  background: linear-gradient(90deg, var(--color-primary-500), var(--color-accent-500));
 }
 
 .dashboard-page__hero small {
   display: inline-block;
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
-  font-family: var(--font-mono);
   font-size: 0.7rem;
   font-weight: var(--font-bold);
   color: var(--color-text-muted);
@@ -81,10 +80,10 @@
   height: 34px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-neutral-900);
+  border-radius: var(--radius-full);
+  border: none;
   color: var(--color-primary-600);
-  background: var(--color-neutral-50);
+  background: var(--color-primary-50);
 }
 
 .dashboard-kpi small {
@@ -92,7 +91,6 @@
   font-size: 0.7rem;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  font-family: var(--font-mono);
   letter-spacing: var(--tracking-wide);
   font-weight: var(--font-bold);
 }
@@ -100,7 +98,6 @@
 .dashboard-kpi strong {
   display: block;
   margin-top: 1px;
-  font-family: var(--font-mono);
   font-weight: var(--font-bold);
   font-size: 1.5rem;
   line-height: var(--leading-tight);
@@ -133,8 +130,8 @@
 }
 
 .dashboard-feed__empty {
-  border: 2px dashed var(--color-neutral-900);
-  border-radius: var(--radius-sm);
+  border: 2px dashed var(--color-neutral-200);
+  border-radius: var(--radius-xl);
   padding: var(--space-4);
   color: var(--color-text-secondary);
   text-align: center;
@@ -146,11 +143,11 @@
 }
 
 .dashboard-section {
-  border: 2px solid var(--color-neutral-900);
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: var(--radius-xl);
   padding: var(--space-3);
   background: var(--color-surface);
-  box-shadow: 2px 2px 0px var(--color-neutral-900);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-section__title-row {
@@ -188,12 +185,13 @@
 }
 
 .dashboard-booking {
-  border: 2px solid var(--color-neutral-900);
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-3);
   display: grid;
   gap: var(--space-2);
+  box-shadow: var(--shadow-xs);
 }
 
 .dashboard-booking__main {
@@ -264,12 +262,13 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2);
-  border: 2px solid var(--color-neutral-900);
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: var(--radius-lg);
   padding: var(--space-2) var(--space-3);
   text-align: left;
   background: var(--color-surface);
   transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
 }
 
 .dashboard-convo:hover {
