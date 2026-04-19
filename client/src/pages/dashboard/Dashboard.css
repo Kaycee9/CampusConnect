@@ -7,8 +7,8 @@
 }
 
 .dashboard-page .card {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-lg);
+  border: none;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
 }
@@ -27,7 +27,7 @@
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
-  height: 3px;
+  height: 4px;
   background: linear-gradient(90deg, var(--color-primary-500), var(--color-accent-500));
 }
 
@@ -81,9 +81,9 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius-full);
-  border: 1px solid var(--color-neutral-200);
+  border: none;
   color: var(--color-primary-600);
-  background: var(--color-neutral-50);
+  background: var(--color-primary-50);
 }
 
 .dashboard-kpi small {
@@ -98,7 +98,7 @@
 .dashboard-kpi strong {
   display: block;
   margin-top: 1px;
-  font-family: var(--font-heading);
+  font-weight: var(--font-bold);
   font-size: 1.5rem;
   line-height: var(--leading-tight);
   color: var(--color-text-primary);
@@ -130,8 +130,8 @@
 }
 
 .dashboard-feed__empty {
-  border: 1px dashed var(--color-neutral-300);
-  border-radius: var(--radius-md);
+  border: 2px dashed var(--color-neutral-200);
+  border-radius: var(--radius-xl);
   padding: var(--space-4);
   color: var(--color-text-secondary);
   text-align: center;
@@ -143,10 +143,11 @@
 }
 
 .dashboard-section {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-xl);
   padding: var(--space-3);
-  background: var(--color-neutral-50);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-section__title-row {
@@ -184,12 +185,13 @@
 }
 
 .dashboard-booking {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-3);
   display: grid;
   gap: var(--space-2);
+  box-shadow: var(--shadow-xs);
 }
 
 .dashboard-booking__main {
@@ -260,12 +262,13 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2);
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-lg);
   padding: var(--space-2) var(--space-3);
   text-align: left;
   background: var(--color-surface);
-  transition: border-color var(--transition-fast), background var(--transition-fast);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
 }
 
 .dashboard-convo:hover {
