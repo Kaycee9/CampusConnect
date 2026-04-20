@@ -47,12 +47,17 @@ export default function Navbar() {
                 <span className="navbar__user-name">{user.studentProfile?.firstName || user.artisanProfile?.firstName}</span>
               </div>
             </nav>
+          </>
+        )}
 
-            {menuOpen && (
-              <div
-                className="navbar__dropdown"
-                onClick={() => setMenuOpen(false)}
-              >
+        {/* Mobile menu toggle */}
+        {menuOpen && (
+          <div
+            className="navbar__dropdown"
+            onClick={() => setMenuOpen(false)}
+          >
+            {isAuth ? (
+              <>
                 <Link to="/profile" className="navbar__dropdown-item">My Profile</Link>
                 <Link to="/bookings" className="navbar__dropdown-item">My Bookings</Link>
                 {user.role === 'ARTISAN' && (
@@ -62,9 +67,14 @@ export default function Navbar() {
                 <button className="navbar__dropdown-item navbar__dropdown-item--danger" onClick={logout}>
                   Log out
                 </button>
-              </div>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="navbar__dropdown-item">Log in</Link>
+                <Link to="/register" className="navbar__dropdown-item">Sign up</Link>
+              </>
             )}
-          </>
+          </div>
         )}
 
         {/* Mobile menu toggle */}
