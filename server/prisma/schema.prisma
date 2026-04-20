@@ -188,6 +188,8 @@ model Payment {
   paystackRef   String?
   status        PaymentStatus @default(PENDING)
   paidAt        DateTime?
+  settlementAvailableAt DateTime?
+  settlementReleasedAt  DateTime?
   createdAt     DateTime      @default(now())
 
   events PaymentEvent[]
@@ -322,4 +324,18 @@ model LedgerEntry {
   @@index([accountId, createdAt])
   @@index([sourceType, sourceId])
   @@index([reference])
+}
+
+model GatewayWebhookEvent {
+  id         String   @id @default(cuid())
+  provider   String
+  dedupeKey  String   @unique
+  eventType  String
+  reference  String?
+  payload    Json
+  processedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([provider, eventType, reference])
+  @@index([processedAt])
 }

@@ -217,7 +217,7 @@ export default function BookingRequest() {
             required
           />
           <Input
-            label="Agreed price (optional)"
+            label="Proposed Price (optional)"
             name="agreedPrice"
             type="number"
             icon={Clock3}

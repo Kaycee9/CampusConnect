@@ -5,6 +5,7 @@ import app from './src/app.js';
 import env from './src/config/env.js';
 import db from './src/config/database.js';
 import { ensurePlatformLedgerAccounts } from './src/lib/ledger.js';
+import { releaseDueSettlements } from './src/lib/ledger.js';
 
 const httpServer = createServer(app);
 
@@ -64,6 +65,18 @@ app.set('io', io);
 
 const start = async () => {
   await ensurePlatformLedgerAccounts(db);
+
+  const settlementIntervalMs = 15 * 60 * 1000;
+  setInterval(async () => {
+    try {
+      const { releasedCount } = await releaseDueSettlements(db);
+      if (releasedCount > 0) {
+        console.log(`Settlement release job moved ${releasedCount} payment(s) to available balances.`);
+      }
+    } catch (error) {
+      console.error('Settlement release job failed:', error);
+    }
+  }, settlementIntervalMs);
 
   httpServer.listen(env.PORT, () => {
     console.log(`

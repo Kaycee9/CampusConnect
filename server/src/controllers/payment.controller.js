@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import db from '../config/database.js';
 import env from '../config/env.js';
 import {
@@ -5,6 +6,12 @@ import {
   isValidPaystackSignature,
   verifyPaystackTransaction,
 } from '../lib/paystack.js';
+import {
+  getArtisanLedgerSnapshot,
+  postPaymentCaptureLedgerEntries,
+  releaseDueSettlements,
+  transferArtisanFunds,
+} from '../lib/ledger.js';
 
 const PLATFORM_FEE_RATE = Math.max(0, Number(env.PLATFORM_FEE_PERCENT || 10) / 100);
 
@@ -46,23 +53,6 @@ const getBookingWithPayment = async (bookingId) => {
 
 const getArtisanProfileByUser = async (userId) => {
   return db.artisanProfile.findUnique({ where: { userId } });
-};
-
-const getEligibleWithdrawalPayments = async (artisanId) => {
-  return db.payment.findMany({
-    where: {
-      status: 'SUCCESS',
-      booking: {
-        artisanId,
-        status: 'COMPLETED',
-      },
-      withdrawalItem: { is: null },
-    },
-    include: {
-      booking: true,
-    },
-    orderBy: { createdAt: 'asc' },
-  });
 };
 
 const isBookingParticipant = (booking, user) => {
@@ -113,22 +103,28 @@ const mapGatewayStatus = (status) => {
   return 'PENDING';
 };
 
-const updatePaymentStatus = async ({ paymentId, fromStatus, toStatus, actorId, action, note, metadata, paidAt, paystackReference }) => {
+const updatePaymentStatus = async ({ paymentId, fromStatus, toStatus, actorId, action, note, metadata, paidAt, paystackReference, client = db }) => {
   const payload = { status: toStatus };
+  const settlementDelayMs = Number(env.LEDGER_SETTLEMENT_DELAY_HOURS || 24) * 60 * 60 * 1000;
 
   if (toStatus === 'SUCCESS') {
-    payload.paidAt = paidAt || new Date();
+    const paidMoment = paidAt || new Date();
+    payload.paidAt = paidMoment;
+    payload.settlementAvailableAt = new Date(paidMoment.getTime() + settlementDelayMs);
+    payload.settlementReleasedAt = null;
   }
 
   if (toStatus !== 'SUCCESS' && fromStatus !== 'SUCCESS') {
     payload.paidAt = null;
+    payload.settlementAvailableAt = null;
+    payload.settlementReleasedAt = null;
   }
 
   if (paystackReference) {
     payload.paystackRef = paystackReference;
   }
 
-  await db.payment.update({
+  await client.payment.update({
     where: { id: paymentId },
     data: payload,
   });
@@ -141,16 +137,17 @@ const updatePaymentStatus = async ({ paymentId, fromStatus, toStatus, actorId, a
     toStatus,
     note,
     metadata,
+    client,
   });
 
-  return db.payment.findUnique({
+  return client.payment.findUnique({
     where: { id: paymentId },
     include: { events: { orderBy: { createdAt: 'desc' } } },
   });
 };
 
-const createPaymentEvent = ({ paymentId, actorId, action, fromStatus, toStatus, note, metadata }) => {
-  return db.paymentEvent.create({
+const createPaymentEvent = ({ paymentId, actorId, action, fromStatus, toStatus, note, metadata, client = db }) => {
+  return client.paymentEvent.create({
     data: {
       paymentId,
       actorId: actorId || null,
@@ -301,6 +298,8 @@ export const initiateBookingPayment = async (req, res) => {
 
 export const verifyPaymentStatus = async (req, res) => {
   try {
+    await releaseDueSettlements(db);
+
     const payment = await db.payment.findUnique({
       where: { id: req.params.paymentId },
       include: {
@@ -359,19 +358,36 @@ export const verifyPaymentStatus = async (req, res) => {
       ? 'Verified successfully with Paystack'
       : `Paystack status is ${gateway.status}`;
 
-    const refreshed = await updatePaymentStatus({
-      paymentId: payment.id,
-      fromStatus: payment.status,
-      toStatus: nextStatus,
-      actorId: req.user.userId,
-      action,
-      note,
-      metadata: {
-        gatewayStatus: gateway.status,
-        reference: payment.reference,
-      },
-      paidAt: gateway.paid_at ? new Date(gateway.paid_at) : undefined,
-      paystackReference: String(gateway.reference || ''),
+    const refreshed = await db.$transaction(async (tx) => {
+      const updated = await updatePaymentStatus({
+        paymentId: payment.id,
+        fromStatus: payment.status,
+        toStatus: nextStatus,
+        actorId: req.user.userId,
+        action,
+        note,
+        metadata: {
+          gatewayStatus: gateway.status,
+          reference: payment.reference,
+        },
+        paidAt: gateway.paid_at ? new Date(gateway.paid_at) : undefined,
+        paystackReference: String(gateway.reference || ''),
+        client: tx,
+      });
+
+      if (nextStatus === 'SUCCESS') {
+        const paymentWithBooking = await tx.payment.findUnique({
+          where: { id: payment.id },
+          include: {
+            booking: {
+              select: { artisanId: true },
+            },
+          },
+        });
+        await postPaymentCaptureLedgerEntries(tx, paymentWithBooking);
+      }
+
+      return updated;
     });
 
     return res.json({ payment: serializePayment(refreshed) });
@@ -405,6 +421,26 @@ export const handlePaystackWebhook = async (req, res) => {
       return res.status(200).json({ ok: true });
     }
 
+    const eventIdentity = event?.data?.id ? String(event.data.id) : crypto.createHash('sha256').update(rawBody).digest('hex');
+    const dedupeKey = `paystack:${event.event}:${eventIdentity}:${String(event.data.reference)}`;
+
+    try {
+      await db.gatewayWebhookEvent.create({
+        data: {
+          provider: 'paystack',
+          dedupeKey,
+          eventType: event.event,
+          reference: String(event.data.reference),
+          payload: event,
+        },
+      });
+    } catch (error) {
+      if (error?.code === 'P2002') {
+        return res.status(200).json({ ok: true });
+      }
+      throw error;
+    }
+
     const payment = await db.payment.findUnique({
       where: { reference: String(event.data.reference) },
     });
@@ -436,18 +472,38 @@ export const handlePaystackWebhook = async (req, res) => {
       return res.status(200).json({ ok: true });
     }
 
-    await updatePaymentStatus({
-      paymentId: payment.id,
-      fromStatus: payment.status,
-      toStatus: nextStatus,
-      action: event.event === 'charge.success' ? 'WEBHOOK_SUCCESS' : 'WEBHOOK_FAILED',
-      note: `Processed ${event.event} webhook`,
-      metadata: {
-        event: event.event,
-        reference: event.data.reference,
-      },
-      paidAt: event.data.paid_at ? new Date(event.data.paid_at) : undefined,
-      paystackReference: String(event.data.reference || ''),
+    await db.$transaction(async (tx) => {
+      await updatePaymentStatus({
+        paymentId: payment.id,
+        fromStatus: payment.status,
+        toStatus: nextStatus,
+        action: event.event === 'charge.success' ? 'WEBHOOK_SUCCESS' : 'WEBHOOK_FAILED',
+        note: `Processed ${event.event} webhook`,
+        metadata: {
+          event: event.event,
+          reference: event.data.reference,
+        },
+        paidAt: event.data.paid_at ? new Date(event.data.paid_at) : undefined,
+        paystackReference: String(event.data.reference || ''),
+        client: tx,
+      });
+
+      if (nextStatus === 'SUCCESS') {
+        const paymentWithBooking = await tx.payment.findUnique({
+          where: { id: payment.id },
+          include: {
+            booking: {
+              select: { artisanId: true },
+            },
+          },
+        });
+        await postPaymentCaptureLedgerEntries(tx, paymentWithBooking);
+      }
+
+      await tx.gatewayWebhookEvent.update({
+        where: { dedupeKey },
+        data: { processedAt: new Date() },
+      });
     });
 
     return res.status(200).json({ ok: true });
@@ -518,6 +574,8 @@ export const refundPayment = async (req, res) => {
 
 export const getWithdrawalSummary = async (req, res) => {
   try {
+    await releaseDueSettlements(db);
+
     if (req.user.role !== 'ARTISAN') {
       return res.status(403).json({ error: 'Only artisans can view withdrawal summary' });
     }
@@ -527,8 +585,7 @@ export const getWithdrawalSummary = async (req, res) => {
       return res.status(404).json({ error: 'Artisan profile not found' });
     }
 
-    const eligiblePayments = await getEligibleWithdrawalPayments(artisan.id);
-    const availableBalance = eligiblePayments.reduce((sum, payment) => sum + Number(payment.artisanAmount || 0), 0);
+    const snapshot = await db.$transaction((tx) => getArtisanLedgerSnapshot(tx, artisan.id));
 
     const pendingRequests = await db.withdrawalRequest.findMany({
       where: {
@@ -553,8 +610,9 @@ export const getWithdrawalSummary = async (req, res) => {
     const pendingAmount = pendingRequests.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
     return res.json({
-      availableBalance: toCurrencyAmount(availableBalance),
-      eligibleCount: eligiblePayments.length,
+      pendingSettlement: toCurrencyAmount(snapshot.pendingSettlement),
+      availableBalance: toCurrencyAmount(snapshot.availableBalance),
+      inPayoutBalance: toCurrencyAmount(snapshot.inPayoutBalance),
       pendingAmount: toCurrencyAmount(pendingAmount),
       requests: recentRequests.map((request) => ({
         id: request.id,
@@ -573,6 +631,8 @@ export const getWithdrawalSummary = async (req, res) => {
 
 export const requestWithdrawal = async (req, res) => {
   try {
+    await releaseDueSettlements(db);
+
     if (req.user.role !== 'ARTISAN') {
       return res.status(403).json({ error: 'Only artisans can request withdrawals' });
     }
@@ -582,16 +642,16 @@ export const requestWithdrawal = async (req, res) => {
       return res.status(404).json({ error: 'Artisan profile not found' });
     }
 
-    const eligiblePayments = await getEligibleWithdrawalPayments(artisan.id);
-    if (eligiblePayments.length === 0) {
-      return res.status(400).json({ error: 'No completed paid bookings are currently eligible for withdrawal' });
-    }
-
-    const amount = toCurrencyAmount(
-      eligiblePayments.reduce((sum, payment) => sum + Number(payment.artisanAmount || 0), 0)
-    );
-
     const created = await db.$transaction(async (tx) => {
+      const snapshot = await getArtisanLedgerSnapshot(tx, artisan.id);
+      const amount = toCurrencyAmount(snapshot.availableBalance);
+
+      if (amount <= 0) {
+        const err = new Error('No available balance to withdraw');
+        err.status = 400;
+        throw err;
+      }
+
       const request = await tx.withdrawalRequest.create({
         data: {
           artisanId: artisan.id,
@@ -601,12 +661,15 @@ export const requestWithdrawal = async (req, res) => {
         },
       });
 
-      await tx.withdrawalItem.createMany({
-        data: eligiblePayments.map((payment) => ({
-          requestId: request.id,
-          paymentId: payment.id,
-          amount: toCurrencyAmount(payment.artisanAmount),
-        })),
+      await transferArtisanFunds(tx, {
+        artisanId: artisan.id,
+        amount,
+        sourceType: 'WITHDRAWAL_REQUEST',
+        sourceId: request.id,
+        reference: `WR-${request.id}`,
+        note: 'Funds moved from available to in-payout pending admin transfer',
+        fromBucket: 'ARTISAN_AVAILABLE',
+        toBucket: 'ARTISAN_IN_PAYOUT',
       });
 
       return tx.withdrawalRequest.findUnique({
@@ -629,6 +692,6 @@ export const requestWithdrawal = async (req, res) => {
     });
   } catch (error) {
     console.error('Request withdrawal error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
   }
 };
