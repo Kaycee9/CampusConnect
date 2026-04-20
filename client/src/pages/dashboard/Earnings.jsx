@@ -221,20 +221,7 @@ export default function Earnings() {
             <strong>{toMoney(isArtisan ? metrics.netEarnings : metrics.totalSpent)}</strong>
           </div>
         </article>
-        <article className="earnings-kpi card">
-          <span className="earnings-kpi__icon"><CreditCard size={16} /></span>
-          <div>
-            <small>{isArtisan ? 'Gross payments' : 'Payments attempted'}</small>
-            <strong>{isArtisan ? toMoney(metrics.grossInflow) : paymentRows.length}</strong>
-          </div>
-        </article>
-        <article className="earnings-kpi card">
-          <span className="earnings-kpi__icon"><TrendingUp size={16} /></span>
-          <div>
-            <small>{isArtisan ? 'Platform fees' : 'Failed payments'}</small>
-            <strong>{isArtisan ? toMoney(metrics.totalFees) : metrics.failedCount}</strong>
-          </div>
-        </article>
+
         <article className="earnings-kpi card">
           <span className="earnings-kpi__icon"><HandCoins size={16} /></span>
           <div>

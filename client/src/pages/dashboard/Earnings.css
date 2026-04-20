@@ -7,8 +7,8 @@
 }
 
 .earnings-page .card {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-lg);
+  border: none;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
 }
@@ -43,8 +43,8 @@
 
 .earnings-kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
 }
 
 .earnings-kpi {
@@ -60,9 +60,9 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius-full);
-  border: 1px solid var(--color-neutral-200);
+  border: none;
   color: var(--color-primary-600);
-  background: var(--color-neutral-50);
+  background: var(--color-primary-50);
 }
 
 .earnings-kpi small {
@@ -105,8 +105,8 @@
 
 .earnings-ledger__empty {
   color: var(--color-text-secondary);
-  border: 1px dashed var(--color-neutral-300);
-  border-radius: var(--radius-md);
+  border: 2px dashed var(--color-neutral-200);
+  border-radius: var(--radius-xl);
   padding: var(--space-4);
 }
 
@@ -140,10 +140,11 @@
 }
 
 .earnings-withdrawal__grid div {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-md);
-  background: var(--color-neutral-50);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   padding: var(--space-3);
+  box-shadow: var(--shadow-xs);
 }
 
 .earnings-withdrawal__grid small {
@@ -167,14 +168,15 @@
 }
 
 .earnings-withdrawal__list article {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: var(--radius-lg);
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
+  box-shadow: var(--shadow-xs);
 }
 
 .earnings-withdrawal__list p {
@@ -245,12 +247,13 @@
 }
 
 .payment-item {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-md);
-  background: var(--color-neutral-50);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   padding: var(--space-4);
   display: grid;
   gap: var(--space-3);
+  box-shadow: var(--shadow-xs);
 }
 
 .payment-item__top {
@@ -283,9 +286,9 @@
 }
 
 .payment-item__meta div {
-  border: 1px solid var(--color-neutral-200);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-50);
   padding: var(--space-2) var(--space-3);
 }
 

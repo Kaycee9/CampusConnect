@@ -92,6 +92,7 @@ export default function BookingRequest() {
           lng: Number(position.coords.longitude.toFixed(6)),
         }));
         setLocationLoading(false);
+        toast.success('Location captured via GPS');
       },
       () => {
         setLocationLoading(false);
@@ -217,7 +218,7 @@ export default function BookingRequest() {
             required
           />
           <Input
-            label="Agreed price (optional)"
+            label="Proposed price (optional)"
             name="agreedPrice"
             type="number"
             icon={Clock3}

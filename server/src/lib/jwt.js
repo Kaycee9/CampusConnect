@@ -2,14 +2,14 @@ import jwt from 'jsonwebtoken';
 
 /**
  * Generates an Access Token and a Refresh Token
- * Access Token: short-lived (15m), contains role for authorization
+ * Access Token: short-lived (120m), contains role for authorization
  * Refresh Token: long-lived (7d), used only to fetch a new pair
  */
 export const generateTokenPair = (userId, role) => {
   const accessToken = jwt.sign(
     { userId, role },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: '120m' }
   );
 
   const refreshToken = jwt.sign(
@@ -28,7 +28,7 @@ export const setTokenCookies = (res, accessToken, refreshToken) => {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? 'strict' : 'lax', // Lax for localhost dev, strict in prod
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    maxAge: 120 * 60 * 1000, // 2 hours
     path: '/',
   });
 
